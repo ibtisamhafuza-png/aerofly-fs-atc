@@ -1,0 +1,3296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Globe ATM // Pure Natural ICAO ATC V6.8</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link id="maplibre-css" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"
+            onerror="this.onerror=null; this.src='https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js';"></script>
+    <style>
+        :root {
+            --bg-dark: #060913;
+            --panel-bg: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-cyan: #38bdf8;
+            --accent-green: #10b981;
+            --accent-yellow: #facc15;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .brand {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .clock-box, .voice-badge, .status-badge, .vhf-toggle-btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.71rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 5px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .vhf-toggle-btn {
+            cursor: pointer;
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            transition: 0.2s;
+        }
+        .vhf-toggle-btn.off {
+            border-color: var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .status-badge {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .status-badge:hover {
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .ctrl-select, .ctrl-input, .search-ap-input {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            padding: 4px 8px;
+            border-radius: 5px;
+        }
+
+        .ctrl-input {
+            width: 88px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--accent-yellow);
+        }
+
+        .search-ap-input {
+            flex: 1;
+            min-width: 130px;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 46px);
+            overflow: hidden;
+        }
+
+        #globe-wrapper {
+            flex: 2;
+            position: relative;
+            height: 100%;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0f172a 0%, #060913 100%);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        #map-fallback-notice {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--accent-amber);
+            color: var(--accent-yellow);
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            text-align: center;
+            max-width: 420px;
+            line-height: 1.5;
+            z-index: 900;
+        }
+
+        .map-overlay-controls {
+            position: absolute;
+            bottom: 22px;
+            left: 18px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-map-float {
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid var(--accent-yellow);
+            color: var(--accent-yellow);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 7px 11px;
+            border-radius: 6px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: 0.2s;
+        }
+
+        .btn-map-float.active {
+            background: var(--accent-yellow);
+            color: #060913;
+        }
+
+        .btn-fir-toggle {
+            border-color: var(--accent-red);
+            color: #fca5a5;
+        }
+
+        .btn-fir-toggle.active {
+            background: rgba(239, 68, 68, 0.88);
+            color: #ffffff;
+            border-color: #ef4444;
+        }
+
+        .atc-panel {
+            flex: 0 0 540px;
+            width: 540px;
+            min-width: 500px;
+            max-width: 565px;
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 11px;
+            gap: 8px;
+            z-index: 10;
+            overflow: hidden;
+        }
+
+        .atm-box {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .atm-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .atm-row label {
+            font-size: 0.66rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .btn-mini {
+            background: var(--card-bg);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 4px 7px;
+            border-radius: 4px;
+            font-size: 0.69rem;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-mini:hover { background: var(--accent-cyan); color: #060913; }
+
+        .btn-emg {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+        .btn-emg:hover, .btn-emg.active-emg {
+            background: var(--accent-red);
+            color: white;
+            animation: pulse 1.2s infinite;
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            background: var(--bg-dark);
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .tele-item span {
+            display: block;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .tele-item strong {
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* SMART CO-PILOT ASSIST BAR */
+        .copilot-assist-bar {
+            display: none;
+            background: rgba(245, 158, 11, 0.14);
+            border: 1px solid var(--accent-amber);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.71rem;
+            color: var(--accent-yellow);
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            transition: 0.2s;
+        }
+
+        .copilot-assist-bar.show { display: flex; }
+
+        .copilot-assist-bar.border-mode {
+            background: rgba(168, 85, 247, 0.18);
+            border-color: var(--accent-purple);
+            color: #e9d5ff;
+        }
+
+        .copilot-assist-bar.next-step-mode {
+            background: rgba(16, 185, 129, 0.13);
+            border-color: var(--accent-green);
+            color: #a7f3d0;
+        }
+
+        .copilot-prompt-text {
+            flex: 1;
+            line-height: 1.35;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .radio-log {
+            flex: 1;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            line-height: 1.45;
+        }
+
+        .msg-atc {
+            background: rgba(56, 189, 248, 0.09);
+            border-left: 3px solid var(--accent-cyan);
+            padding: 8px 10px;
+            border-radius: 4px;
+        }
+
+        .msg-atc.border-alert {
+            background: rgba(168, 85, 247, 0.16);
+            border-left-color: var(--accent-purple);
+        }
+
+        .msg-atc.emergency {
+            background: rgba(239, 68, 68, 0.16);
+            border-left-color: var(--accent-red);
+        }
+
+        .msg-pilot {
+            background: rgba(16, 185, 129, 0.12);
+            border-left: 3px solid var(--accent-green);
+            padding: 8px 10px;
+            border-radius: 4px;
+            align-self: flex-end;
+            width: 92%;
+        }
+
+        .msg-sys-title {
+            color: var(--accent-yellow);
+            font-weight: 700;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .demo-speed-bar {
+            display: none;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--accent-cyan);
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .demo-speed-bar.show { display: flex; }
+
+        .speed-btn-group {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-spd {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.69rem;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .btn-spd.active, .btn-spd:hover {
+            background: var(--accent-cyan);
+            color: #060913;
+            border-color: var(--accent-cyan);
+        }
+
+        .controls { display: flex; flex-direction: column; gap: 6px; }
+        .btn-row { display: flex; gap: 6px; }
+
+        button.main-btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            padding: 9px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.76rem;
+        }
+
+        .btn-ptt { flex: 2; background-color: var(--accent-cyan); color: #070b14; }
+        .btn-ptt:hover { background-color: #7dd3fc; }
+        .btn-ptt.listening { background-color: var(--accent-red); color: white; animation: pulse 1.2s infinite; }
+
+        .btn-sec {
+            flex: 1;
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+        .btn-sec:hover { border-color: var(--accent-yellow); color: var(--accent-yellow); }
+
+        .text-input-row { display: flex; gap: 6px; }
+        .text-input-row input {
+            flex: 1;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 7px 9px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+        }
+        .text-input-row input:focus { outline: none; border-color: var(--accent-cyan); }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+
+        .btn-radar-toggle {
+            border-color: var(--accent-green);
+            color: #6ee7b7;
+        }
+        .btn-radar-toggle.active {
+            background: rgba(16, 185, 129, 0.88);
+            color: #060913;
+            border-color: #10b981;
+        }
+        .btn-ils {
+            border-color: var(--accent-yellow);
+            color: var(--accent-yellow);
+        }
+        .btn-ils:hover, .btn-ils.active-ils {
+            background: var(--accent-yellow);
+            color: #060913;
+        }
+        .ils-selector-bar {
+            display: none;
+            background: rgba(250, 204, 21, 0.12);
+            border: 1px solid var(--accent-yellow);
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.71rem;
+            color: var(--accent-yellow);
+            flex-direction: column;
+            gap: 6px;
+        }
+        .ils-selector-bar.show {
+            display: flex;
+        }
+        .ils-rwy-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .msg-atis-card {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            border-left: 3px solid var(--accent-amber);
+            padding: 8px 10px;
+            border-radius: 5px;
+            color: #fef3c7;
+        }
+        .msg-summary-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(56, 189, 248, 0.14));
+            border: 1px solid var(--accent-green);
+            padding: 10px 12px;
+            border-radius: 6px;
+            color: #ecfdf5;
+        }
+
+        .btn-step-climb {
+            border-color: #a855f7;
+            color: #d8b4fe;
+        }
+        .btn-step-climb:hover {
+            background: #a855f7;
+            color: #060913;
+        }
+
+        .plane-marker-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            z-index: 9999 !important;
+            position: relative;
+        }
+
+        .plane-badge {
+            background: rgba(6, 9, 19, 0.92);
+            border: 1px solid #facc15;
+            color: #facc15;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            margin-top: 2px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.85);
+        }
+    
+        .mic-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.71rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 5px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+        .mic-pill.ready {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        .mic-pill.warn {
+            border-color: var(--accent-amber);
+            color: var(--accent-yellow);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V6.8</div>
+        <div class="header-controls">
+            <div class="clock-box" id="dynamic-clock" title="Aviation Zulu (UTC) & Local Time">🕒 00:00:00Z // LOC 00:00</div>
+            <button class="vhf-toggle-btn" id="btn-vhf-fx" onclick="toggleVhfEffects()" title="Efek klik & squelch radio VHF kokpit">🔊 VHF FX: ON</button>
+            <div class="mic-pill" id="mic-status-pill" onclick="primeMicrophoneSession(true)" title="Klik untuk mengunci izin mikrofon selama sesi berlangsung">🎤 MIC: STANDBY</div>
+            <div class="voice-badge" id="voice-engine-badge" title="Gunakan Microsoft Edge untuk suara Neural Manusia Asli terbaik">🎙️ CHECKING VOICE...</div>
+            <select id="aircraft-type" class="ctrl-select" onchange="validateCallsignInput()" title="ICAO Aircraft Type">
+                <option value="A388" selected>A388 (Airbus A380-800)</option>
+                <option value="B77W">B77W (Boeing 777-300ER)</option>
+                <option value="A359">A359 (Airbus A350-900)</option>
+                <option value="B789">B789 (Boeing 787-9)</option>
+                <option value="B748">B748 (Boeing 747-8I)</option>
+                <option value="A333">A333 (Airbus A330-300)</option>
+                <option value="B738">B738 (Boeing 737-800)</option>
+                <option value="A320">A320 (Airbus A320neo)</option>
+            </select>
+            <input type="text" id="callsign" class="ctrl-input" value="SIA211" onblur="validateCallsignInput()" title="Callsign + Nomor Penerbangan (cth: SIA211, UAE224, GIA405)">
+            <div class="status-badge" id="conn-status" onclick="connectAeroflyBridge(true)" title="Klik untuk menyambung ulang ke Aerofly FS 4 Bridge">3D ATM READY</div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div id="globe-wrapper">
+            <div id="map"></div>
+            <div id="map-fallback-notice">
+                ⚠️ <strong>Peta 3D tidak dapat dimuat</strong><br>
+                Pastikan koneksi internet aktif untuk mengunduh peta satelit &amp; pustaka MapLibre, lalu tekan <strong>Ctrl + F5</strong>.<br><br>
+                <em>(Sistem suara ATC &amp; radio di sebelah kanan tetap aktif penuh)</em>
+            </div>
+
+            <div class="map-overlay-controls">
+                <button class="btn-map-float active" id="btn-center" onclick="centerOnPlane()">
+                    🎯 KAMERA TERKUNCI (C / F9)
+                </button>
+                <button class="btn-map-float btn-radar-toggle active" id="btn-radar-ring" onclick="toggleAirportRadar()">
+                    📡 RADAR: ON
+                </button>
+                <button class="btn-map-float btn-fir-toggle active" id="btn-fir-lines" onclick="toggleFirBoundaries()">
+                    🌐 BATAS FIR: ON
+                </button>
+                <button class="btn-map-float" onclick="zoomToSpaceGlobe()">
+                    🪐 BOLA BUMI 3D
+                </button>
+            </div>
+        </div>
+
+        <div class="atc-panel">
+            <div class="atm-box">
+                <div class="atm-row">
+                    <label>ROUTE:</label>
+                    <input list="airports-datalist" id="fp-origin" class="search-ap-input" value="WADD - Bali Ngurah Rai" placeholder="Cari asal (ICAO/Kota)..." onfocus="this.select()">
+                    <span style="color:#facc15;">➔</span>
+                    <input list="airports-datalist" id="fp-dest" class="search-ap-input" value="WSSS - Singapore Changi" placeholder="Cari tujuan (ICAO/Kota)..." onfocus="this.select()">
+                    <button class="btn-mini" onclick="activateFlightPlan()">FILE FPL</button>
+                </div>
+                <div class="atm-row">
+                    <label>ATM FIR:</label>
+                    <select id="atm-fir-select" class="ctrl-select" style="flex: 1 1 130px; min-width: 115px; max-width: 215px;"></select>
+                    <button class="btn-mini" onclick="manualConnectATM()">CONNECT</button>
+                    <button class="btn-mini btn-ils" id="btn-ils-info" onclick="toggleIlsSelector()" title="Cek Frekuensi & Course ILS Bandara Tujuan">📡 ILS INFO</button>
+                    <button class="btn-mini btn-step-climb" id="btn-step-climb" onclick="requestStepClimb()" title="Minta naik ketinggian bertahap (+2.000 ft RVSM) untuk penerbangan jarak jauh">⬆️ STEP CLIMB</button>
+                    <button class="btn-mini btn-emg" id="btn-emg-toggle" onclick="toggleEmergency()">🚨 7700</button>
+                </div>
+                <div class="ils-selector-bar" id="ils-selector-bar">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span id="ils-selector-title">📡 PILIH RUNWAY TUJUAN UNTUK DATA ILS:</span>
+                        <button class="btn-mini" style="padding:1px 6px; border-color:#94a3b8; color:#94a3b8;" onclick="closeIlsSelector()">✕</button>
+                    </div>
+                    <div class="ils-rwy-buttons" id="ils-rwy-buttons"></div>
+                </div>
+                <datalist id="airports-datalist"></datalist>
+            </div>
+
+            <div class="telemetry-grid">
+                <div class="tele-item">
+                    <span>Active ATC &amp; VHF Freq</span>
+                    <strong id="ui-sector">WADD GND // 121.60 MHz</strong>
+                </div>
+                <div class="tele-item">
+                    <span>Flight Phase &amp; Dist / T/D</span>
+                    <strong id="ui-phase">PREFLIGHT (GND)</strong>
+                </div>
+                <div class="tele-item">
+                    <span>Altitude / Speed / HDG</span>
+                    <strong id="ui-alt-hdg">0 FT / 0 KT / 090°</strong>
+                </div>
+                <div class="tele-item">
+                    <span>FIR Boundary &amp; Transponder</span>
+                    <strong id="ui-fir">WAAF // SQK 2000</strong>
+                </div>
+            </div>
+
+            <!-- SMART CONTEXT-AWARE CO-PILOT BAR -->
+            <div class="copilot-assist-bar" id="copilot-assist-bar">
+                <span class="copilot-prompt-text" id="copilot-prompt-text">⚠️ CO-PILOT READY</span>
+                <button class="btn-mini" id="btn-copilot-action" style="border-color:#facc15; color:#facc15;" onclick="executeSmartCoPilot()">🎙️ CO-PILOT</button>
+            </div>
+
+            <div class="radio-log" id="radio-log">
+                <div class="msg-atc">
+                    <span class="msg-sys-title">🌍 [SISTEM ATC V6.8 — CLEAN SOLO FLIGHT &amp; CORE ENGINE FIXES]</span>
+                    • <strong>Fokus Pesawat Tunggal:</strong> Peta bola bumi 3D bersih tanpa pesawat AI pengganggu—hanya pesawatmu yang tampil jelas.<br>
+                    • <strong>Mikrofon Terkunci Sesi (Anti-Prompt Berulang):</strong> Izin mikrofon dikunci aktif selama tab terbuka sehingga tidak meminta izin berulang kali saat menekan PTT.<br>
+                    • <strong>Perbaikan Sinkronisasi Audio &amp; Prosedur:</strong> Anti-tumpang-tindih suara ATC &amp; Co-Pilot, Step Climb presisi, serta transisi rute 100% stabil.
+                </div>
+            </div>
+
+            <div class="demo-speed-bar" id="demo-speed-bar">
+                <span>⏩ PLAY SPEED (TEST):</span>
+                <div class="speed-btn-group">
+                    <button class="btn-spd" id="spd-05" onclick="setDemoSpeed(0.5)">0.5x</button>
+                    <button class="btn-spd active" id="spd-1" onclick="setDemoSpeed(1)">1x</button>
+                    <button class="btn-spd" id="spd-2" onclick="setDemoSpeed(2)">2x</button>
+                    <button class="btn-spd" id="spd-5" onclick="setDemoSpeed(5)">5x</button>
+                    <button class="btn-spd" id="spd-10" onclick="setDemoSpeed(10)">10x</button>
+                    <button class="btn-spd" id="spd-20" onclick="setDemoSpeed(20)">20x</button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="btn-row">
+                    <button class="main-btn btn-ptt" id="btn-talk" onclick="toggleVoiceInput()">
+                        🎙️ BICARA KE ATC [SPASI / R-CTRL]
+                    </button>
+                    <button class="main-btn btn-sec" id="btn-sim" onclick="toggleDemoFlight()">
+                        🛫 TEST RUTE
+                    </button>
+                </div>
+
+                <div class="text-input-row">
+                    <input type="text" id="manual-msg" placeholder="Pilot Radio (cth: Request IFR clearance / Pushback / Taxi / Departure)..." onkeypress="if(event.key==='Enter') sendManualText()">
+                    <button class="main-btn btn-sec" style="flex:0 0 65px;" onclick="sendManualText()">KIRIM</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 0. ENGINE AUDIO VHF RADIO KOKPIT (PTT CLICK & STATIC HISS)
+        // ==========================================
+        let vhfFxEnabled = true;
+        let audioCtx = null;
+        let staticNoiseNode = null;
+        window._utterancePool = [];
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) audioCtx = new AudioContextClass();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
+            if ('speechSynthesis' in window) {
+                try {
+                    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                    if (availableVoices.length === 0) loadAndCheckVoices();
+                } catch (e) {}
+            }
+        }
+
+        ['pointerdown', 'mousedown', 'keydown', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, () => {
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume().catch(() => {});
+                }
+                if ('speechSynthesis' in window) {
+                    try {
+                        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                        if (availableVoices.length === 0) loadAndCheckVoices();
+                    } catch (e) {}
+                }
+            }, { passive: true });
+        });
+
+        function toggleVhfEffects() {
+            vhfFxEnabled = !vhfFxEnabled;
+            const btn = document.getElementById('btn-vhf-fx');
+            if (vhfFxEnabled) {
+                btn.classList.remove('off');
+                btn.innerText = "🔊 VHF FX: ON";
+                initAudioContext();
+                playVhfClick('end');
+            } else {
+                btn.classList.add('off');
+                btn.innerText = "🔇 VHF FX: OFF";
+            }
+        }
+
+        function playVhfClick(type = 'start') {
+            if (!vhfFxEnabled) return;
+            initAudioContext();
+            if (!audioCtx || audioCtx.state !== 'running') return;
+
+            const now = audioCtx.currentTime;
+            // 1. PTT Mechanical Click Tone
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(type === 'start' ? 1380 : 940, now);
+            osc.frequency.exponentialRampToValueAtTime(310, now + 0.03);
+
+            gain.gain.setValueAtTime(0.085, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.032);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.035);
+
+            // 2. Short VHF Radio Squelch Tail (65ms filtered noise burst — clean, no background hum)
+            const squelchDur = 0.065;
+            const bufferSize = Math.floor(audioCtx.sampleRate * squelchDur);
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.45));
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer;
+
+            const bandpass = audioCtx.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.setValueAtTime(1950, now);
+            bandpass.Q.setValueAtTime(2.2, now);
+
+            const nGain = audioCtx.createGain();
+            nGain.gain.setValueAtTime(0.055, now);
+            nGain.gain.exponentialRampToValueAtTime(0.001, now + squelchDur);
+
+            noise.connect(bandpass);
+            bandpass.connect(nGain);
+            nGain.connect(audioCtx.destination);
+            noise.start(now);
+            noise.stop(now + squelchDur);
+        }
+
+        function startVhfStatic() {
+            // Desis/static latar dinonaktifkan agar suara Neural terdengar jernih maksimal
+        }
+
+        function stopVhfStatic() {
+            if (staticNoiseNode) {
+                try { staticNoiseNode.stop(); staticNoiseNode.disconnect(); } catch (e) {}
+                staticNoiseNode = null;
+            }
+        }
+
+        let ttsKeepAliveTimer = null;
+        function startTtsKeepAlive() {
+            stopTtsKeepAlive();
+            ttsKeepAliveTimer = setInterval(() => {
+                if ('speechSynthesis' in window && window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+                    try {
+                        window.speechSynthesis.pause();
+                        window.speechSynthesis.resume();
+                    } catch (e) {}
+                } else if ('speechSynthesis' in window && !window.speechSynthesis.speaking) {
+                    stopTtsKeepAlive();
+                }
+            }, 9500);
+        }
+        function stopTtsKeepAlive() {
+            if (ttsKeepAliveTimer) {
+                clearInterval(ttsKeepAliveTimer);
+                ttsKeepAliveTimer = null;
+            }
+        }
+        function cancelAllSpeechSafe() {
+            stopTtsKeepAlive();
+            if ('speechSynthesis' in window) {
+                try { window.speechSynthesis.cancel(); } catch (e) {}
+            }
+            stopVhfStatic();
+            window._utterancePool = [];
+        }
+
+        // ==========================================
+        // 1. DATABASE 50 BANDARA HUB DUNIA
+        // ==========================================
+        const worldAirports = [
+            // INDONESIA & ASEAN
+            { code: "WADD", fir: "WAAF", firName: "Makassar Control", accFreq: "132.40", appFreq: "119.70", twrFreq: "118.10", gndFreq: "121.60", delFreq: "121.80", name: "Bali Ngurah Rai", lat: -8.7482, lon: 115.1672, tz: 8, rwyHeavy: "09", rwyMed: "27", taxi: "Taxiway Echo and Foxtrot", gateHeavy: "International Stand A11", gateMed: "Domestic Gate 3", cc: "ID", countryName: "Indonesian" },
+            { code: "WARR", fir: "WAAF", firName: "Makassar Control", accFreq: "132.40", appFreq: "119.30", twrFreq: "118.30", gndFreq: "121.90", delFreq: "121.70", name: "Surabaya Juanda", lat: -7.3797, lon: 112.7869, tz: 7, rwyHeavy: "10", rwyMed: "28", taxi: "Taxiway Alpha and November 1", gateHeavy: "Terminal 2 Stand B10", gateMed: "Terminal 1 Gate 4", cc: "ID", countryName: "Indonesian" },
+            { code: "WIII", fir: "WIIF", firName: "Jakarta Control", accFreq: "132.45", appFreq: "119.75", twrFreq: "118.20", gndFreq: "121.65", delFreq: "121.95", name: "Jakarta Soekarno-Hatta", lat: -6.1256, lon: 106.6558, tz: 7, rwyHeavy: "07R", rwyMed: "25L", taxi: "Taxiway Kilo and November", gateHeavy: "Terminal 3 Gate E14", gateMed: "Terminal 2 Gate D5", cc: "ID", countryName: "Indonesian" },
+            { code: "WAAA", fir: "WAAF", firName: "Makassar Control", accFreq: "132.40", appFreq: "119.10", twrFreq: "118.10", gndFreq: "121.70", delFreq: "121.85", name: "Makassar Sultan Hasanuddin", lat: -5.0616, lon: 119.5540, tz: 8, rwyHeavy: "03", rwyMed: "21", taxi: "Taxiway Alpha and Charlie", gateHeavy: "Gate 5", gateMed: "Gate 2", cc: "ID", countryName: "Indonesian" },
+            { code: "WIMM", fir: "WIIF", firName: "Jakarta Control", accFreq: "132.45", appFreq: "119.50", twrFreq: "118.40", gndFreq: "121.80", delFreq: "121.90", name: "Medan Kualanamu", lat: 3.6422, lon: 98.8853, tz: 7, rwyHeavy: "05", rwyMed: "23", taxi: "Taxiway Alpha and Bravo", gateHeavy: "Gate A8", gateMed: "Gate B4", cc: "ID", countryName: "Indonesian" },
+            { code: "WSSS", fir: "WSJC", firName: "Singapore Radar", accFreq: "134.40", appFreq: "120.30", twrFreq: "118.60", gndFreq: "121.85", delFreq: "121.65", name: "Singapore Changi", lat: 1.3644, lon: 103.9915, tz: 8, rwyHeavy: "02L", rwyMed: "20R", taxi: "Taxiway Whiskey, Echo, and Victor", gateHeavy: "Terminal 3 Gate A15", gateMed: "Terminal 2 Gate E22", cc: "SG", countryName: "Singapore" },
+            { code: "WMKK", fir: "WMFC", firName: "Lumpur Radar", accFreq: "132.60", appFreq: "119.45", twrFreq: "118.50", gndFreq: "121.80", delFreq: "121.60", name: "Kuala Lumpur Intl", lat: 2.7456, lon: 101.7099, tz: 8, rwyHeavy: "14L", rwyMed: "32R", taxi: "Taxiway Bravo and Sierra", gateHeavy: "Satellite Gate C12", gateMed: "Gate G8", cc: "MY", countryName: "Malaysian" },
+            { code: "VTBS", fir: "VTBB", firName: "Bangkok Control", accFreq: "128.10", appFreq: "119.40", twrFreq: "118.20", gndFreq: "121.90", delFreq: "121.70", name: "Bangkok Suvarnabhumi", lat: 13.6900, lon: 100.7501, tz: 7, rwyHeavy: "01R", rwyMed: "19L", taxi: "Taxiway Echo and Tango", gateHeavy: "Concourse D4", gateMed: "Gate E6", cc: "TH", countryName: "Thai" },
+            { code: "VVTS", fir: "VVTS", firName: "Ho Chi Minh Control", accFreq: "120.90", appFreq: "119.10", twrFreq: "118.70", gndFreq: "121.90", delFreq: "121.80", name: "Ho Chi Minh Tan Son Nhat", lat: 10.8188, lon: 106.6519, tz: 7, rwyHeavy: "25R", rwyMed: "07L", taxi: "Taxiway Sierra and Echo", gateHeavy: "International Gate 18", gateMed: "Gate 9", cc: "VN", countryName: "Vietnamese" },
+            { code: "RPLL", fir: "RPHI", firName: "Manila Control", accFreq: "125.70", appFreq: "119.70", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.75", name: "Manila Ninoy Aquino", lat: 14.5086, lon: 121.0194, tz: 8, rwyHeavy: "06", rwyMed: "24", taxi: "Taxiway Charlie and Echo", gateHeavy: "Terminal 1 Gate 12", gateMed: "Terminal 3 Gate 114", cc: "PH", countryName: "Philippine" },
+
+            // EAST ASIA
+            { code: "VHHH", fir: "VHHK", firName: "Hong Kong Radar", accFreq: "127.10", appFreq: "119.10", twrFreq: "118.40", gndFreq: "121.60", delFreq: "121.80", name: "Hong Kong Intl", lat: 22.3080, lon: 113.9185, tz: 8, rwyHeavy: "07R", rwyMed: "25L", taxi: "Taxiway Juliet and Kilo", gateHeavy: "Gate 62", gateMed: "Gate 24", cc: "HK", countryName: "Hong Kong" },
+            { code: "ZSPD", fir: "ZSHA", firName: "Shanghai Control", accFreq: "126.85", appFreq: "119.35", twrFreq: "118.80", gndFreq: "121.75", delFreq: "121.95", name: "Shanghai Pudong", lat: 31.1443, lon: 121.8083, tz: 8, rwyHeavy: "17L", rwyMed: "35R", taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal 2 Gate D75", gateMed: "Terminal 1 Gate C22", cc: "CN", countryName: "Chinese" },
+            { code: "ZBAA", fir: "ZBPE", firName: "Beijing Control", accFreq: "124.55", appFreq: "119.00", twrFreq: "118.50", gndFreq: "121.70", delFreq: "121.90", name: "Beijing Capital", lat: 40.0799, lon: 116.6031, tz: 8, rwyHeavy: "18R", rwyMed: "36L", taxi: "Taxiway Kilo and Lima", gateHeavy: "Terminal 3E Gate E12", gateMed: "Terminal 2 Gate 28", cc: "CN", countryName: "Chinese" },
+            { code: "ZGGG", fir: "ZGZU", firName: "Guangzhou Control", accFreq: "125.15", appFreq: "119.70", twrFreq: "118.20", gndFreq: "121.65", delFreq: "121.85", name: "Guangzhou Baiyun", lat: 23.3924, lon: 113.2988, tz: 8, rwyHeavy: "02R", rwyMed: "20L", taxi: "Taxiway Tango and Echo", gateHeavy: "Terminal 2 Gate A16", gateMed: "Gate B10", cc: "CN", countryName: "Chinese" },
+            { code: "RCTP", fir: "RCAA", firName: "Taipei Control", accFreq: "126.70", appFreq: "119.60", twrFreq: "118.70", gndFreq: "121.70", delFreq: "121.90", name: "Taipei Taoyuan", lat: 25.0797, lon: 121.2342, tz: 8, rwyHeavy: "05R", rwyMed: "23L", taxi: "Taxiway November and Sierra", gateHeavy: "Terminal 2 Gate C5", gateMed: "Terminal 1 Gate B6", cc: "TW", countryName: "Taipei" },
+            { code: "RJTT", fir: "RJJJ", firName: "Tokyo Control", accFreq: "124.10", appFreq: "119.10", twrFreq: "118.10", gndFreq: "121.70", delFreq: "121.85", name: "Tokyo Haneda", lat: 35.5494, lon: 139.7798, tz: 9, rwyHeavy: "34R", rwyMed: "16L", taxi: "Taxiway Charlie and Juliet", gateHeavy: "Terminal 3 Gate 108", gateMed: "Terminal 2 Gate 62", cc: "JP", countryName: "Japanese" },
+            { code: "RJAA", fir: "RJJJ", firName: "Tokyo Control", accFreq: "124.10", appFreq: "124.40", twrFreq: "118.20", gndFreq: "121.95", delFreq: "121.60", name: "Tokyo Narita", lat: 35.7720, lon: 140.3929, tz: 9, rwyHeavy: "16R", rwyMed: "34L", taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal 1 Gate 45", gateMed: "Terminal 2 Gate 72", cc: "JP", countryName: "Japanese" },
+            { code: "RJBB", fir: "RJJJ", firName: "Fukuoka Control", accFreq: "125.90", appFreq: "119.45", twrFreq: "118.20", gndFreq: "121.65", delFreq: "121.80", name: "Osaka Kansai", lat: 34.4342, lon: 135.2440, tz: 9, rwyHeavy: "06R", rwyMed: "24L", taxi: "Taxiway Juliet and Kilo", gateHeavy: "North Wing Gate 14", gateMed: "South Wing Gate 32", cc: "JP", countryName: "Japanese" },
+            { code: "RKSI", fir: "RKRR", firName: "Incheon Control", accFreq: "125.70", appFreq: "119.05", twrFreq: "118.20", gndFreq: "121.40", delFreq: "121.65", name: "Seoul Incheon", lat: 37.4602, lon: 126.4407, tz: 9, rwyHeavy: "15R", rwyMed: "33L", taxi: "Taxiway Papa and Romeo", gateHeavy: "Terminal 2 Gate 234", gateMed: "Gate 112", cc: "KR", countryName: "Korean" },
+
+            // SOUTH ASIA & MIDDLE EAST
+            { code: "VIDP", fir: "VIDF", firName: "Delhi Control", accFreq: "125.70", appFreq: "126.35", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.75", name: "Delhi Indira Gandhi", lat: 28.5562, lon: 77.1000, tz: 5.5, rwyHeavy: "11R", rwyMed: "29L", taxi: "Taxiway Tango and Papa", gateHeavy: "Terminal 3 Gate 18", gateMed: "Gate 42", cc: "IN", countryName: "Indian" },
+            { code: "VABB", fir: "VABF", firName: "Mumbai Control", accFreq: "125.35", appFreq: "127.90", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Mumbai Chhatrapati Shivaji", lat: 19.0896, lon: 72.8656, tz: 5.5, rwyHeavy: "09", rwyMed: "27", taxi: "Taxiway November and Echo", gateHeavy: "Terminal 2 Gate 54", gateMed: "Gate 21", cc: "IN", countryName: "Indian" },
+            { code: "OMDB", fir: "OMAE", firName: "Emirates Radar", accFreq: "124.85", appFreq: "124.90", twrFreq: "118.75", gndFreq: "118.35", delFreq: "121.65", name: "Dubai Intl", lat: 25.2532, lon: 55.3657, tz: 4, rwyHeavy: "12R", rwyMed: "30L", taxi: "Taxiway Mike, Kilo, and Romeo", gateHeavy: "Concourse A Gate A18", gateMed: "Concourse B Gate B21", cc: "AE", countryName: "Emirates" },
+            { code: "OTHH", fir: "OTDF", firName: "Doha Control", accFreq: "124.45", appFreq: "121.10", twrFreq: "118.70", gndFreq: "121.90", delFreq: "121.60", name: "Doha Hamad Intl", lat: 25.2731, lon: 51.6081, tz: 3, rwyHeavy: "16L", rwyMed: "34R", taxi: "Taxiway Alpha and Echo", gateHeavy: "Concourse C Gate C12", gateMed: "Concourse B Gate B8", cc: "QA", countryName: "Qatari" },
+            { code: "OEJN", fir: "OEJD", firName: "Jeddah Control", accFreq: "128.50", appFreq: "119.20", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Jeddah King Abdulaziz", lat: 21.6796, lon: 39.1565, tz: 3, rwyHeavy: "16L", rwyMed: "34R", taxi: "Taxiway Lima and November", gateHeavy: "Terminal 1 Gate A12", gateMed: "Gate B6", cc: "SA", countryName: "Saudi" },
+            { code: "LTFM", fir: "LTBB", firName: "Istanbul Control", accFreq: "126.95", appFreq: "121.15", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.75", name: "Istanbul Airport", lat: 41.2753, lon: 28.7519, tz: 3, rwyHeavy: "17L", rwyMed: "35R", taxi: "Taxiway Foxtrot and Golf", gateHeavy: "Concourse F Gate F6", gateMed: "Concourse B Gate B14", cc: "TR", countryName: "Turkish" },
+
+            // EUROPE
+            { code: "EGLL", fir: "EGTT", firName: "London Control", accFreq: "132.60", appFreq: "119.72", twrFreq: "118.50", gndFreq: "121.90", delFreq: "121.97", name: "London Heathrow", lat: 51.4700, lon: -0.4543, tz: 0, rwyHeavy: "09L", rwyMed: "27R", taxi: "Taxiway Alpha and Sierra", gateHeavy: "Terminal 5 Stand 512", gateMed: "Terminal 3 Gate 24", cc: "GB", countryName: "United Kingdom" },
+            { code: "EGKK", fir: "EGTT", firName: "London Control", accFreq: "132.60", appFreq: "126.82", twrFreq: "124.22", gndFreq: "121.80", delFreq: "121.95", name: "London Gatwick", lat: 51.1537, lon: -0.1821, tz: 0, rwyHeavy: "08R", rwyMed: "26L", taxi: "Taxiway Juliet and Quebec", gateHeavy: "North Terminal Stand 105", gateMed: "South Terminal Stand 22", cc: "GB", countryName: "United Kingdom" },
+            { code: "LFPG", fir: "LFFF", firName: "Paris Control", accFreq: "125.70", appFreq: "118.15", twrFreq: "119.25", gndFreq: "121.80", delFreq: "121.65", name: "Paris Charles de Gaulle", lat: 49.0097, lon: 2.5479, tz: 1, rwyHeavy: "08L", rwyMed: "26R", taxi: "Taxiway Quebec and Papa", gateHeavy: "Terminal 2E Gate K41", gateMed: "Gate L26", cc: "FR", countryName: "French" },
+            { code: "EHAM", fir: "EHAA", firName: "Amsterdam Radar", accFreq: "124.30", appFreq: "119.05", twrFreq: "119.22", gndFreq: "121.70", delFreq: "121.97", name: "Amsterdam Schiphol", lat: 52.3105, lon: 4.7683, tz: 1, rwyHeavy: "18R", rwyMed: "36L", taxi: "Taxiway Alpha and Bravo", gateHeavy: "Pier E Gate E18", gateMed: "Pier D Gate D42", cc: "NL", countryName: "Dutch" },
+            { code: "EDDF", fir: "EDGG", firName: "Langen Radar", accFreq: "125.20", appFreq: "120.80", twrFreq: "119.90", gndFreq: "121.80", delFreq: "121.95", name: "Frankfurt Main", lat: 50.0379, lon: 8.5622, tz: 1, rwyHeavy: "07C", rwyMed: "25C", taxi: "Taxiway November and Lima", gateHeavy: "Terminal 1 Gate Z62", gateMed: "Gate A24", cc: "DE", countryName: "German" },
+            { code: "EDDM", fir: "EDMM", firName: "Munich Radar", accFreq: "124.05", appFreq: "120.77", twrFreq: "118.70", gndFreq: "121.72", delFreq: "121.92", name: "Munich Airport", lat: 48.3537, lon: 11.7750, tz: 1, rwyHeavy: "08R", rwyMed: "26L", taxi: "Taxiway Charlie and Delta", gateHeavy: "Terminal 2 Gate H18", gateMed: "Terminal 1 Gate B12", cc: "DE", countryName: "German" },
+            { code: "LSZH", fir: "LSAZ", firName: "Zurich Radar", accFreq: "128.05", appFreq: "118.00", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.75", name: "Zurich Kloten", lat: 47.4582, lon: 8.5555, tz: 1, rwyHeavy: "16", rwyMed: "34", taxi: "Taxiway Echo and Foxtrot", gateHeavy: "Dock E Gate E46", gateMed: "Dock A Gate A62", cc: "CH", countryName: "Swiss" },
+            { code: "LIRF", fir: "LIRR", firName: "Roma Radar", accFreq: "124.20", appFreq: "119.20", twrFreq: "118.70", gndFreq: "121.90", delFreq: "121.72", name: "Rome Fiumicino", lat: 41.8003, lon: 12.2389, tz: 1, rwyHeavy: "16R", rwyMed: "34L", taxi: "Taxiway Bravo and Charlie", gateHeavy: "Terminal 3 Gate E34", gateMed: "Terminal 1 Gate B18", cc: "IT", countryName: "Italian" },
+            { code: "LEMD", fir: "LECM", firName: "Madrid Control", accFreq: "127.10", appFreq: "118.40", twrFreq: "118.15", gndFreq: "121.85", delFreq: "121.65", name: "Madrid Barajas", lat: 40.4983, lon: -3.5676, tz: 1, rwyHeavy: "18R", rwyMed: "36L", taxi: "Taxiway Mike and November", gateHeavy: "Terminal 4S Gate S24", gateMed: "Terminal 4 Gate H14", cc: "ES", countryName: "Spanish" },
+            { code: "EKCH", fir: "EKDK", firName: "Copenhagen Control", accFreq: "124.97", appFreq: "119.80", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.62", name: "Copenhagen Kastrup", lat: 55.6180, lon: 12.6508, tz: 1, rwyHeavy: "04R", rwyMed: "22L", taxi: "Taxiway Alpha and Bravo", gateHeavy: "Pier C Gate C32", gateMed: "Pier B Gate B12", cc: "DK", countryName: "Danish" },
+
+            // NORTH & SOUTH AMERICA
+            { code: "KJFK", fir: "KZNY", firName: "New York Center", accFreq: "125.32", appFreq: "125.70", twrFreq: "119.10", gndFreq: "121.90", delFreq: "135.05", name: "New York JFK", lat: 40.6413, lon: -73.7781, tz: -5, rwyHeavy: "04R", rwyMed: "22L", taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal 4 Gate B26", gateMed: "Terminal 1 Gate 5", cc: "US", countryName: "United States" },
+            { code: "KLAX", fir: "KZLA", firName: "Los Angeles Center", accFreq: "125.80", appFreq: "124.50", twrFreq: "120.95", gndFreq: "121.65", delFreq: "121.40", name: "Los Angeles Intl", lat: 33.9416, lon: -118.4085, tz: -8, rwyHeavy: "24R", rwyMed: "25L", taxi: "Taxiway Charlie and Echo", gateHeavy: "Tom Bradley Gate 152", gateMed: "Terminal 4 Gate 42", cc: "US", countryName: "United States" },
+            { code: "KSFO", fir: "KZOA", firName: "Oakland Center", accFreq: "127.80", appFreq: "135.10", twrFreq: "120.50", gndFreq: "121.80", delFreq: "118.20", name: "San Francisco Intl", lat: 37.6213, lon: -122.3790, tz: -8, rwyHeavy: "28R", rwyMed: "01R", taxi: "Taxiway Alpha and Bravo", gateHeavy: "International Gate G4", gateMed: "Terminal 2 Gate D8", cc: "US", countryName: "United States" },
+            { code: "KORD", fir: "KZAU", firName: "Chicago Center", accFreq: "126.55", appFreq: "124.35", twrFreq: "120.75", gndFreq: "121.90", delFreq: "121.60", name: "Chicago O'Hare", lat: 41.9742, lon: -87.9073, tz: -6, rwyHeavy: "10C", rwyMed: "28C", taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal 5 Gate M14", gateMed: "Terminal 1 Gate B10", cc: "US", countryName: "United States" },
+            { code: "KATL", fir: "KZTL", firName: "Atlanta Center", accFreq: "125.55", appFreq: "127.90", twrFreq: "119.10", gndFreq: "121.90", delFreq: "118.10", name: "Atlanta Hartsfield-Jackson", lat: 33.6407, lon: -84.4277, tz: -5, rwyHeavy: "08R", rwyMed: "26L", taxi: "Taxiway Echo and Foxtrot", gateHeavy: "Concourse F Gate F6", gateMed: "Concourse B Gate B18", cc: "US", countryName: "United States" },
+            { code: "KMIA", fir: "KZMA", firName: "Miami Center", accFreq: "125.15", appFreq: "124.85", twrFreq: "118.30", gndFreq: "121.80", delFreq: "135.35", name: "Miami Intl", lat: 25.7959, lon: -80.2870, tz: -5, rwyHeavy: "09", rwyMed: "27", taxi: "Taxiway Papa and Quebec", gateHeavy: "Concourse J Gate J11", gateMed: "Concourse D Gate D24", cc: "US", countryName: "United States" },
+            { code: "KSEA", fir: "KZSE", firName: "Seattle Center", accFreq: "124.20", appFreq: "119.20", twrFreq: "119.90", gndFreq: "121.70", delFreq: "128.00", name: "Seattle-Tacoma", lat: 47.4502, lon: -122.3088, tz: -8, rwyHeavy: "16L", rwyMed: "34R", taxi: "Taxiway Alpha and Bravo", gateHeavy: "South Satellite Gate S9", gateMed: "Concourse C Gate C12", cc: "US", countryName: "United States" },
+            { code: "CYYZ", fir: "CZYZ", firName: "Toronto Center", accFreq: "124.67", appFreq: "132.80", twrFreq: "118.70", gndFreq: "121.90", delFreq: "121.30", name: "Toronto Pearson", lat: 43.6777, lon: -79.6248, tz: -5, rwyHeavy: "05", rwyMed: "23", taxi: "Taxiway Hotel and Juliet", gateHeavy: "Terminal 1 Gate E75", gateMed: "Terminal 3 Gate B22", cc: "CA", countryName: "Canadian" },
+            { code: "CYVR", fir: "CZVR", firName: "Vancouver Center", accFreq: "125.10", appFreq: "128.17", twrFreq: "118.70", gndFreq: "121.70", delFreq: "121.40", name: "Vancouver Intl", lat: 49.1967, lon: -123.1815, tz: -8, rwyHeavy: "08R", rwyMed: "26L", taxi: "Taxiway Alpha and Charlie", gateHeavy: "International Gate D64", gateMed: "Domestic Gate C32", cc: "CA", countryName: "Canadian" },
+            { code: "SBGR", fir: "SBBS", firName: "Brasilia Center", accFreq: "125.05", appFreq: "119.80", twrFreq: "118.40", gndFreq: "121.90", delFreq: "121.70", name: "Sao Paulo Guarulhos", lat: -23.4356, lon: -46.4731, tz: -3, rwyHeavy: "09L", rwyMed: "27R", taxi: "Taxiway Alpha and Echo", gateHeavy: "Terminal 3 Gate 305", gateMed: "Terminal 2 Gate 214", cc: "BR", countryName: "Brazilian" },
+
+            // AUSTRALIA & OCEANIA
+            { code: "YSSY", fir: "YMMM", firName: "Melbourne Center", accFreq: "124.20", appFreq: "124.40", twrFreq: "120.50", gndFreq: "121.70", delFreq: "133.80", name: "Sydney Kingsford Smith", lat: -33.9399, lon: 151.1753, tz: 10, rwyHeavy: "16R", rwyMed: "34L", taxi: "Taxiway Alpha and Charlie", gateHeavy: "International Gate 53", gateMed: "Gate 32", cc: "AU", countryName: "Australian" },
+            { code: "YMML", fir: "YMMM", firName: "Melbourne Center", accFreq: "124.20", appFreq: "132.00", twrFreq: "120.50", gndFreq: "121.70", delFreq: "127.20", name: "Melbourne Tullamarine", lat: -37.6690, lon: 144.8410, tz: 10, rwyHeavy: "16", rwyMed: "34", taxi: "Taxiway Alpha and Victor", gateHeavy: "Terminal 2 Gate 9", gateMed: "Terminal 1 Gate 22", cc: "AU", countryName: "Australian" },
+            { code: "YBBN", fir: "YBBB", firName: "Brisbane Center", accFreq: "125.70", appFreq: "124.70", twrFreq: "120.50", gndFreq: "121.70", delFreq: "118.60", name: "Brisbane Airport", lat: -27.3942, lon: 153.1218, tz: 10, rwyHeavy: "01R", rwyMed: "19L", taxi: "Taxiway Alpha and Bravo", gateHeavy: "International Gate 82", gateMed: "Domestic Gate 36", cc: "AU", countryName: "Australian" },
+            { code: "YPPH", fir: "YMMM", firName: "Melbourne Center", accFreq: "125.20", appFreq: "123.60", twrFreq: "127.40", gndFreq: "121.70", delFreq: "118.55", name: "Perth Airport", lat: -31.9385, lon: 115.9672, tz: 8, rwyHeavy: "03", rwyMed: "21", taxi: "Taxiway Charlie and Juliet", gateHeavy: "Terminal 1 Gate 52", gateMed: "Terminal 4 Gate 14", cc: "AU", countryName: "Australian" },
+            { code: "NZAA", fir: "NZZC", firName: "Auckland Control", accFreq: "123.90", appFreq: "124.30", twrFreq: "118.70", gndFreq: "121.90", delFreq: "128.20", name: "Auckland Intl", lat: -37.0082, lon: 174.7850, tz: 12, rwyHeavy: "05R", rwyMed: "23L", taxi: "Taxiway Alpha and Bravo", gateHeavy: "International Gate 6", gateMed: "Domestic Gate 28", cc: "NZ", countryName: "New Zealand" }
+        ];
+
+        // ==========================================
+        // 2. POLIGON GARIS MERAH TIPIS WILAYAH UDARA NEGARA (FIR)
+        // ==========================================
+        const firPolygons = [
+            { id: "WIIF", name: "Jakarta FIR (WIIF)", cc: "ID", countryName: "Indonesian", coords: [[6.0, 94.0], [6.0, 109.5], [-10.5, 109.5], [-10.5, 94.0]] },
+            { id: "WAAF", name: "Makassar FIR (WAAF)", cc: "ID", countryName: "Indonesian", coords: [[5.5, 109.5], [5.5, 141.0], [-12.0, 141.0], [-12.0, 109.5]] },
+            { id: "WSJC", name: "Singapore FIR (WSJC)", cc: "SG", countryName: "Singapore", coords: [[3.5, 102.5], [3.5, 108.5], [-0.5, 108.5], [-0.5, 102.5]] },
+            { id: "WMFC", name: "Kuala Lumpur FIR (WMFC)", cc: "MY", countryName: "Malaysian", coords: [[7.2, 98.5], [7.2, 105.0], [1.5, 105.0], [1.5, 98.5]] },
+            { id: "VTBB", name: "Bangkok FIR (VTBB)", cc: "TH", countryName: "Thai", coords: [[20.5, 97.5], [20.5, 105.8], [6.5, 105.8], [6.5, 97.5]] },
+            { id: "VVTS", name: "Ho Chi Minh FIR (VVTS)", cc: "VN", countryName: "Vietnamese", coords: [[17.5, 103.5], [17.5, 114.0], [7.0, 114.0], [7.0, 103.5]] },
+            { id: "RPHI", name: "Manila FIR (RPHI)", cc: "PH", countryName: "Philippine", coords: [[21.0, 116.5], [21.0, 130.0], [4.5, 130.0], [4.5, 116.5]] },
+            { id: "VHHK", name: "Hong Kong FIR (VHHK)", cc: "HK", countryName: "Hong Kong", coords: [[23.8, 111.5], [23.8, 117.5], [18.5, 117.5], [18.5, 111.5]] },
+            { id: "RCAA", name: "Taipei FIR (RCAA)", cc: "TW", countryName: "Taipei", coords: [[29.0, 117.5], [29.0, 124.5], [21.0, 124.5], [21.0, 117.5]] },
+            { id: "ZSHA", name: "Shanghai FIR (ZSHA)", cc: "CN", countryName: "Chinese", coords: [[36.5, 114.0], [36.5, 124.5], [23.8, 124.5], [23.8, 114.0]] },
+            { id: "ZBPE", name: "Beijing FIR (ZBPE)", cc: "CN", countryName: "Chinese", coords: [[45.0, 110.0], [45.0, 124.0], [36.5, 124.0], [36.5, 110.0]] },
+            { id: "RKRR", name: "Incheon FIR (RKRR)", cc: "KR", countryName: "Korean", coords: [[39.0, 124.0], [39.0, 131.5], [32.0, 131.5], [32.0, 124.0]] },
+            { id: "RJJJ", name: "Fukuoka/Tokyo FIR (RJJJ)", cc: "JP", countryName: "Japanese", coords: [[45.5, 129.0], [45.5, 148.0], [26.0, 148.0], [26.0, 129.0]] },
+            { id: "VIDF", name: "Delhi/Mumbai FIR (VIDF)", cc: "IN", countryName: "Indian", coords: [[34.0, 68.0], [34.0, 88.0], [8.0, 88.0], [8.0, 68.0]] },
+            { id: "OMAE", name: "Emirates/Gulf FIR (OMAE)", cc: "AE", countryName: "Emirates", coords: [[27.5, 50.0], [27.5, 57.5], [22.0, 57.5], [22.0, 50.0]] },
+            { id: "OEJD", name: "Jeddah FIR (OEJD)", cc: "SA", countryName: "Saudi", coords: [[31.5, 35.0], [31.5, 50.0], [16.5, 50.0], [16.5, 35.0]] },
+            { id: "LTBB", name: "Istanbul FIR (LTBB)", cc: "TR", countryName: "Turkish", coords: [[42.5, 26.0], [42.5, 44.0], [36.0, 44.0], [36.0, 26.0]] },
+            { id: "EGTT", name: "London FIR (EGTT)", cc: "GB", countryName: "United Kingdom", coords: [[58.5, -8.5], [58.5, 2.5], [49.5, 2.5], [49.5, -8.5]] },
+            { id: "LFFF", name: "Paris FIR (LFFF)", cc: "FR", countryName: "French", coords: [[51.0, -5.0], [51.0, 7.8], [42.0, 7.8], [42.0, -5.0]] },
+            { id: "EDGG", name: "Germany/Benelux FIR (EDGG)", cc: "DE", countryName: "German", coords: [[55.0, 3.2], [55.0, 15.0], [46.0, 15.0], [46.0, 3.2]] },
+            { id: "LIRR", name: "Roma FIR (LIRR)", cc: "IT", countryName: "Italian", coords: [[46.0, 6.8], [46.0, 18.5], [36.5, 18.5], [36.5, 6.8]] },
+            { id: "LECM", name: "Madrid FIR (LECM)", cc: "ES", countryName: "Spanish", coords: [[44.0, -9.5], [44.0, 4.0], [36.0, 4.0], [36.0, -9.5]] },
+            { id: "KZNY", name: "US East/Central FIR (KZNY)", cc: "US", countryName: "United States", coords: [[48.0, -95.0], [48.0, -67.0], [24.5, -67.0], [24.5, -95.0]] },
+            { id: "KZLA", name: "US West FIR (KZLA)", cc: "US", countryName: "United States", coords: [[49.0, -125.5], [49.0, -95.0], [31.5, -95.0], [31.5, -125.5]] },
+            { id: "CZYZ", name: "Canada FIR (CZYZ)", cc: "CA", countryName: "Canadian", coords: [[62.0, -135.0], [62.0, -60.0], [43.0, -60.0], [43.0, -135.0]] },
+            { id: "YMMM", name: "Australia FIR (YMMM/YBBB)", cc: "AU", countryName: "Australian", coords: [[-10.5, 112.0], [-10.5, 155.0], [-44.0, 155.0], [-44.0, 112.0]] },
+            { id: "NZZC", name: "Auckland FIR (NZZC)", cc: "NZ", countryName: "New Zealand", coords: [[-33.0, 165.0], [-33.0, 179.0], [-47.5, 179.0], [-47.5, 165.0]] }
+        ];
+
+        function isPointInPolygon(lat, lon, polygonCoords) {
+            let inside = false;
+            for (let i = 0, j = polygonCoords.length - 1; i < polygonCoords.length; j = i++) {
+                const xi = polygonCoords[i][0], yi = polygonCoords[i][1];
+                const xj = polygonCoords[j][0], yj = polygonCoords[j][1];
+                const intersect = ((yi > lon) !== (yj > lon)) && (lat < (xj - xi) * (lon - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function detectCurrentFirPolygon(lat, lon) {
+            for (const f of firPolygons) {
+                if (isPointInPolygon(lat, lon, f.coords)) return f;
+            }
+            return null;
+        }
+
+        // ==========================================
+        // 2B. KALKULASI LENGKUNG GREAT CIRCLE (ANTI-ANTIMERIDIAN BUG)
+        // ==========================================
+        function interpolateGreatCircle(lat1, lon1, lat2, lon2, fraction) {
+            const toRad = Math.PI / 180;
+            const toDeg = 180 / Math.PI;
+            const phi1 = lat1 * toRad, lam1 = lon1 * toRad;
+            const phi2 = lat2 * toRad, lam2 = lon2 * toRad;
+
+            const d = 2 * Math.asin(Math.sqrt(
+                Math.pow(Math.sin((phi2 - phi1) / 2), 2) +
+                Math.cos(phi1) * Math.cos(phi2) * Math.pow(Math.sin((lam2 - lam1) / 2), 2)
+            ));
+
+            if (d === 0) return { lat: lat1, lon: lon1 };
+
+            const A = Math.sin((1 - fraction) * d) / Math.sin(d);
+            const B = Math.sin(fraction * d) / Math.sin(d);
+
+            const x = A * Math.cos(phi1) * Math.cos(lam1) + B * Math.cos(phi2) * Math.cos(lam2);
+            const y = A * Math.cos(phi1) * Math.sin(lam1) + B * Math.cos(phi2) * Math.sin(lam2);
+            const z = A * Math.sin(phi1) + B * Math.sin(phi2);
+
+            const phi3 = Math.atan2(z, Math.sqrt(x * x + y * y));
+            const lam3 = Math.atan2(y, x);
+
+            return { lat: phi3 * toDeg, lon: lam3 * toDeg };
+        }
+
+        function generateGreatCircleMultiLine(ap1, ap2, steps = 72) {
+            const segments = [[]];
+            let prevLon = null;
+
+            for (let i = 0; i <= steps; i++) {
+                const pt = interpolateGreatCircle(ap1.lat, ap1.lon, ap2.lat, ap2.lon, i / steps);
+                if (prevLon !== null && Math.abs(pt.lon - prevLon) > 180) {
+                    segments.push([]);
+                }
+                segments[segments.length - 1].push([pt.lon, pt.lat]);
+                prevLon = pt.lon;
+            }
+            return segments;
+        }
+
+        const airportsDatalist = document.getElementById('airports-datalist');
+        const firSelect = document.getElementById('atm-fir-select');
+
+        worldAirports.forEach(ap => {
+            airportsDatalist.innerHTML += `<option value="${ap.code} - ${ap.name}">`;
+            firSelect.innerHTML += `<option value="${ap.code}">${ap.fir} (${ap.firName} / ${ap.code})</option>`;
+        });
+
+        function parseAirportFromInput(inputVal, fallbackAp) {
+            if (!inputVal) return fallbackAp;
+            const upper = inputVal.trim().toUpperCase();
+            const codePart = upper.split('-')[0].trim();
+            return worldAirports.find(a => a.code === codePart) ||
+                   worldAirports.find(a => a.name.toUpperCase().includes(upper)) ||
+                   fallbackAp;
+        }
+
+        // ==========================================
+        // 3. JAM DINAMIS ZULU (UTC) & WAKTU LOKAL BANDARA
+        // ==========================================
+        let activeTzOffset = 8;
+
+        function updateDynamicClock() {
+            const now = new Date();
+            const utcH = String(now.getUTCHours()).padStart(2, '0');
+            const utcM = String(now.getUTCMinutes()).padStart(2, '0');
+            const utcS = String(now.getUTCSeconds()).padStart(2, '0');
+
+            const localMs = now.getTime() + (activeTzOffset * 3600000);
+            const localDate = new Date(localMs);
+            const locH = String(localDate.getUTCHours()).padStart(2, '0');
+            const locM = String(localDate.getUTCMinutes()).padStart(2, '0');
+
+            document.getElementById('dynamic-clock').innerText = `🕒 ${utcH}:${utcM}:${utcS}Z // LOC ${locH}:${locM}`;
+        }
+        setInterval(updateDynamicClock, 1000);
+        updateDynamicClock();
+
+        // ==========================================
+        // 4. INISIALISASI BOLA BUMI 3D BULAT + SAFE MAP GUARD
+        // ==========================================
+        let currentLat = -8.7482;
+        let currentLon = 115.1672;
+        let currentHeading = 90;
+        let currentAlt = 0;
+        let currentSpeed = 0;
+        let autoFollowPlane = true;
+        let showFirBorders = true;
+        let showAirportRadar = true;
+
+        function createRadarCircleCoords(lat, lon, radiusNM = 30, points = 64) {
+            const coords = [];
+            const dLat = radiusNM / 60.0;
+            const dLon = radiusNM / (60.0 * Math.max(0.15, Math.cos(lat * Math.PI / 180)));
+            for (let i = 0; i <= points; i++) {
+                const angle = (i / points) * 2 * Math.PI;
+                coords.push([lon + dLon * Math.cos(angle), lat + dLat * Math.sin(angle)]);
+            }
+            return coords;
+        }
+
+        function updateAirportRadarRings() {
+            if (!map || !map.getSource('airport-radar-src')) return;
+            const features = [];
+            if (originAirport) {
+                features.push({
+                    type: 'Feature',
+                    properties: { code: originAirport.code, role: 'ORIGIN' },
+                    geometry: { type: 'LineString', coordinates: createRadarCircleCoords(originAirport.lat, originAirport.lon, 28) }
+                });
+            }
+            if (destAirport && destAirport.code !== originAirport.code) {
+                features.push({
+                    type: 'Feature',
+                    properties: { code: destAirport.code, role: 'DEST' },
+                    geometry: { type: 'LineString', coordinates: createRadarCircleCoords(destAirport.lat, destAirport.lon, 35) }
+                });
+                features.push({
+                    type: 'Feature',
+                    properties: { code: destAirport.code, role: 'DEST_INNER' },
+                    geometry: { type: 'LineString', coordinates: createRadarCircleCoords(destAirport.lat, destAirport.lon, 12) }
+                });
+            }
+            map.getSource('airport-radar-src').setData({ type: 'FeatureCollection', features });
+        }
+        let flightTrailSegments = [[]];
+        let isUserManuallySelectingFir = false;
+        let map = null;
+        let planeMarker = null;
+
+        firSelect.addEventListener('focus', () => { isUserManuallySelectingFir = true; });
+        firSelect.addEventListener('blur', () => { setTimeout(() => { isUserManuallySelectingFir = false; }, 1500); });
+
+        if (typeof maplibregl !== 'undefined') {
+            try {
+                map = new maplibregl.Map({
+                    container: 'map',
+                    center: [currentLon, currentLat],
+                    zoom: 2.2,
+                    pitch: 15,
+                    style: {
+                        version: 8,
+                        sources: {
+                            'satellite': {
+                                type: 'raster',
+                                tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+                                tileSize: 256,
+                                maxzoom: 18,
+                                attribution: '&copy; Esri World Imagery'
+                            },
+                            'labels': {
+                                type: 'raster',
+                                tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
+                                tileSize: 256,
+                                maxzoom: 18
+                            }
+                        },
+                        layers: [
+                            { id: 'satellite-layer', type: 'raster', source: 'satellite' },
+                            { id: 'labels-layer', type: 'raster', source: 'labels', paint: { 'raster-opacity': 0.85 } }
+                        ],
+                        sky: {
+                            'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 5, 0.85, 7, 0]
+                        }
+                    }
+                });
+
+                map.on('style.load', () => {
+                    if (typeof map.setProjection === 'function') {
+                        map.setProjection({ type: 'globe' });
+                    }
+                });
+
+                map.on('error', (e) => {
+                    console.warn("MapLibre tile/network warning:", e);
+                });
+
+                const planeEl = document.createElement('div');
+                planeEl.className = 'plane-marker-container';
+                planeEl.innerHTML = `
+                    <svg id="plane-svg" width="32" height="32" viewBox="0 0 24 24" fill="#facc15" stroke="#060913" stroke-width="1.3" style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.95));">
+                        <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                    </svg>
+                    <div class="plane-badge" id="plane-label">SIA211 A388</div>
+                `;
+                planeMarker = new maplibregl.Marker({ element: planeEl, anchor: 'center' })
+                    .setLngLat([currentLon, currentLat])
+                    .addTo(map);
+                if (planeMarker.getElement()) {
+                    planeMarker.getElement().style.zIndex = '9999';
+                }
+
+                map.on('load', () => {
+                    const firGeoJson = {
+                        type: 'FeatureCollection',
+                        features: firPolygons.map(f => ({
+                            type: 'Feature',
+                            properties: { name: f.name },
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: [...f.coords, f.coords[0]].map(c => [c[1], c[0]])
+                            }
+                        }))
+                    };
+
+                    map.addSource('fir-boundaries', { type: 'geojson', data: firGeoJson });
+                    map.addLayer({
+                        id: 'fir-lines-layer',
+                        type: 'line',
+                        source: 'fir-boundaries',
+                        paint: {
+                            'line-color': '#ef4444',
+                            'line-width': 1.3,
+                            'line-opacity': 0.72,
+                            'line-dasharray': [4, 2]
+                        }
+                    });
+
+                    const airportGeoJson = {
+                        type: 'FeatureCollection',
+                        features: worldAirports.map(ap => ({
+                            type: 'Feature',
+                            properties: { code: ap.code, name: ap.name },
+                            geometry: { type: 'Point', coordinates: [ap.lon, ap.lat] }
+                        }))
+                    };
+
+                    map.addSource('airports-src', { type: 'geojson', data: airportGeoJson });
+                    map.addLayer({
+                        id: 'airports-dots',
+                        type: 'circle',
+                        source: 'airports-src',
+                        paint: {
+                            'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 3, 10, 5, 15, 7],
+                            'circle-color': '#f59e0b',
+                            'circle-stroke-width': 1.2,
+                            'circle-stroke-color': '#060913'
+                        }
+                    });
+
+                    map.addSource('route-src', {
+                        type: 'geojson',
+                        data: { type: 'FeatureCollection', features: [] }
+                    });
+                    map.addLayer({
+                        id: 'route-line',
+                        type: 'line',
+                        source: 'route-src',
+                        paint: {
+                            'line-color': '#38bdf8',
+                            'line-width': 2.5,
+                            'line-dasharray': [3, 3]
+                        }
+                    });
+
+                    map.addSource('trail-src', {
+                        type: 'geojson',
+                        data: { type: 'FeatureCollection', features: [] }
+                    });
+                    map.addLayer({
+                        id: 'trail-line',
+                        type: 'line',
+                        source: 'trail-src',
+                        paint: {
+                            'line-color': '#facc15',
+                            'line-width': 2.5,
+                            'line-opacity': 0.85
+                        }
+                    });
+
+                    // Cincin Radar Hijau Bandara Statis (Top Layer & Ringan)
+                    map.addSource('airport-radar-src', {
+                        type: 'geojson',
+                        data: { type: 'FeatureCollection', features: [] }
+                    });
+                    map.addLayer({
+                        id: 'airport-radar-layer',
+                        type: 'line',
+                        source: 'airport-radar-src',
+                        paint: {
+                            'line-color': '#10b981',
+                            'line-width': 1.6,
+                            'line-opacity': 0.78,
+                            'line-dasharray': [2, 2]
+                        }
+                    });
+                    updateAirportRadarRings();
+                });
+
+                map.on('dragstart', () => {
+                    autoFollowPlane = false;
+                    const btn = document.getElementById('btn-center');
+                    btn.classList.remove('active');
+                    btn.innerText = "🎯 PUSATKAN PESAWAT (C / F9)";
+                });
+            } catch (err) {
+                console.error("Gagal inisialisasi peta 3D:", err);
+                document.getElementById('map-fallback-notice').style.display = 'block';
+            }
+        } else {
+            document.getElementById('map-fallback-notice').style.display = 'block';
+        }
+
+        function centerOnPlane() {
+            autoFollowPlane = true;
+            if (map) {
+                const targetZoom = currentAlt > 20000 ? 6.0 : (currentAlt > 2000 ? 10.5 : 14.5);
+                map.flyTo({ center: [currentLon, currentLat], zoom: targetZoom, pitch: 35, duration: 900 });
+            }
+            const btn = document.getElementById('btn-center');
+            btn.classList.add('active');
+            btn.innerText = "🎯 KAMERA TERKUNCI (C / F9)";
+        }
+
+        function zoomToSpaceGlobe() {
+            autoFollowPlane = false;
+            const btn = document.getElementById('btn-center');
+            btn.classList.remove('active');
+            btn.innerText = "🎯 PUSATKAN PESAWAT (C / F9)";
+            if (map) {
+                map.flyTo({ center: [currentLon, currentLat], zoom: 1.4, pitch: 0, duration: 1200 });
+            }
+        }
+
+        function toggleFirBoundaries() {
+            showFirBorders = !showFirBorders;
+            const btn = document.getElementById('btn-fir-lines');
+            if (showFirBorders) {
+                btn.classList.add('active');
+                btn.innerText = "🌐 BATAS FIR: ON";
+                if (map && map.getLayer('fir-lines-layer')) map.setLayoutProperty('fir-lines-layer', 'visibility', 'visible');
+            } else {
+                btn.classList.remove('active');
+                btn.innerText = "🌐 BATAS FIR: OFF";
+                if (map && map.getLayer('fir-lines-layer')) map.setLayoutProperty('fir-lines-layer', 'visibility', 'none');
+            }
+        }
+
+        function toggleAirportRadar() {
+            showAirportRadar = !showAirportRadar;
+            const btn = document.getElementById('btn-radar-ring');
+            if (showAirportRadar) {
+                btn.classList.add('active');
+                btn.innerText = "📡 RADAR: ON";
+                if (map && map.getLayer('airport-radar-layer')) map.setLayoutProperty('airport-radar-layer', 'visibility', 'visible');
+            } else {
+                btn.classList.remove('active');
+                btn.innerText = "📡 RADAR: OFF";
+                if (map && map.getLayer('airport-radar-layer')) map.setLayoutProperty('airport-radar-layer', 'visibility', 'none');
+            }
+        }
+
+        // ==========================================
+        // 5. PROFIL SUARA REGIONAL & SALAM LOKAL FONETIK
+        // ==========================================
+        const regionalGreetingsMap = {
+            "ID": { hello: "Selamat pagi", bye: "Terima kasih" },
+            "MY": { hello: "Selamat sejahtera", bye: "Terima kasih" },
+            "SG": { hello: "Good day", bye: "Thank you" },
+            "TH": { hello: "Sawasdee", bye: "Khop khun" },
+            "VN": { hello: "Xin chao", bye: "Cam on" },
+            "PH": { hello: "Mabuhay", bye: "Salamat" },
+            "HK": { hello: "Nei hou", bye: "Do jeh" },
+            "CN": { hello: "Ni hao", bye: "Xie xie" },
+            "TW": { hello: "Ni hao", bye: "Xie xie" },
+            "JP": { hello: "Konnichiwa", bye: "Arigato" },
+            "KR": { hello: "Annyeonghaseyo", bye: "Kamsahamnida" },
+            "IN": { hello: "Namaste", bye: "Dhanyavaad" },
+            "AE": { hello: "Assalamu alaikum", bye: "Ma'a salama" },
+            "QA": { hello: "Assalamu alaikum", bye: "Ma'a salama" },
+            "SA": { hello: "Assalamu alaikum", bye: "Fi amanillah" },
+            "TR": { hello: "Merhaba", bye: "Tesekkurler" },
+            "GB": { hello: "Good day", bye: "Cheerio" },
+            "FR": { hello: "Bonjour", bye: "Au revoir" },
+            "NL": { hello: "Goedendag", bye: "Tot ziens" },
+            "DE": { hello: "Guten Tag", bye: "Auf Wiedersehen" },
+            "CH": { hello: "Gruezi", bye: "Uf Wiederluege" },
+            "IT": { hello: "Buongiorno", bye: "Arrivederci" },
+            "ES": { hello: "Buenos dias", bye: "Hasta luego" },
+            "DK": { hello: "Goddag", bye: "Farvel" },
+            "US": { hello: "Good day", bye: "So long" },
+            "CA": { hello: "Good day", bye: "Safe flight" },
+            "BR": { hello: "Bom dia", bye: "Obrigado" },
+            "AU": { hello: "G'day", bye: "Cheers" },
+            "NZ": { hello: "Kia ora", bye: "Ka kite" }
+        };
+
+        function getLocalGreeting(cc, type = "hello") {
+            const entry = regionalGreetingsMap[cc];
+            if (!entry) return type === "hello" ? "Good day" : "Good day";
+            return entry[type] || "Good day";
+        }
+
+        function getRegionalVoiceProfile(countryCode) {
+            const profiles = {
+                "ID": { accentLang: "en-SG", pitch: 0.99, rate: 0.97 },
+                "SG": { accentLang: "en-SG", pitch: 1.01, rate: 0.98 },
+                "MY": { accentLang: "en-SG", pitch: 0.98, rate: 0.97 },
+                "TH": { accentLang: "en-SG", pitch: 1.02, rate: 0.97 },
+                "VN": { accentLang: "en-SG", pitch: 1.00, rate: 0.97 },
+                "PH": { accentLang: "en-PH", pitch: 1.01, rate: 0.98 },
+                "HK": { accentLang: "en-HK", pitch: 1.00, rate: 0.98 },
+                "CN": { accentLang: "en-HK", pitch: 0.97, rate: 0.96 },
+                "TW": { accentLang: "en-HK", pitch: 1.01, rate: 0.97 },
+                "JP": { accentLang: "en-US", pitch: 1.02, rate: 0.97 },
+                "KR": { accentLang: "en-US", pitch: 0.99, rate: 0.97 },
+                "IN": { accentLang: "en-IN", pitch: 0.98, rate: 0.97 },
+                "AE": { accentLang: "en-GB", pitch: 0.98, rate: 0.97 },
+                "QA": { accentLang: "en-GB", pitch: 1.00, rate: 0.97 },
+                "SA": { accentLang: "en-GB", pitch: 0.95, rate: 0.96 },
+                "TR": { accentLang: "en-GB", pitch: 0.97, rate: 0.97 },
+                "GB": { accentLang: "en-GB", pitch: 0.98, rate: 0.99 },
+                "FR": { accentLang: "en-GB", pitch: 1.02, rate: 0.98 },
+                "NL": { accentLang: "en-GB", pitch: 0.99, rate: 0.98 },
+                "DE": { accentLang: "en-GB", pitch: 0.95, rate: 0.97 },
+                "CH": { accentLang: "en-GB", pitch: 0.97, rate: 0.97 },
+                "IT": { accentLang: "en-GB", pitch: 1.03, rate: 0.98 },
+                "ES": { accentLang: "en-GB", pitch: 1.01, rate: 0.98 },
+                "DK": { accentLang: "en-GB", pitch: 0.99, rate: 0.98 },
+                "US": { accentLang: "en-US", pitch: 0.98, rate: 1.00 },
+                "CA": { accentLang: "en-US", pitch: 1.00, rate: 0.99 },
+                "BR": { accentLang: "en-US", pitch: 1.01, rate: 0.97 },
+                "AU": { accentLang: "en-AU", pitch: 1.00, rate: 0.99 },
+                "NZ": { accentLang: "en-AU", pitch: 1.02, rate: 0.99 }
+            };
+            return profiles[countryCode] || { accentLang: "en-GB", pitch: 1.00, rate: 0.98 };
+        }
+
+        // ==========================================
+        // 6. KONVERSI TEKS RADIO VHF ALAMI (ANTI-ROBOT!)
+        // ==========================================
+        const airlineTelephonyMap = {
+            "SIA": "Singapore", "GIA": "Indonesia", "UAE": "Emirates", "QTR": "Qatari",
+            "SVA": "Saudia", "EYD": "Etihad", "ETD": "Etihad", "FDB": "Sky Dubai",
+            "GFA": "Gulf Air", "KAC": "Kuwaiti", "RJA": "Jordanian", "MSR": "Egyptair",
+            "BAW": "Speedbird", "AFR": "Airfrans", "DLH": "Lufthansa", "KLM": "KLM",
+            "JAL": "Japan Air", "ANA": "All Nippon", "KAL": "Korean Air", "AAR": "Asiana",
+            "CPA": "Cathay", "MAS": "Malaysian", "THA": "Thai", "HVN": "Vietnam Airlines",
+            "PAL": "Philippine", "CEB": "Cebu Air", "BTK": "Batik", "CTV": "Supergreen",
+            "LNI": "Lion Inter", "AWQ": "Wagon Air", "AXM": "Asian Express", "SCO": "Scooter",
+            "CSN": "China Southern", "CES": "China Eastern", "CCA": "Air China", "CAL": "Dynasty",
+            "EVA": "Eva", "AIC": "Air India", "IGO": "Ifly", "THY": "Turkish",
+            "ITY": "Itarrow", "RYR": "Ryanair", "EZY": "Easy", "SWR": "Swiss",
+            "IBE": "Iberia", "SAS": "Scandinavian", "QFA": "Qantas", "VOZ": "Velocity",
+            "ANZ": "New Zealand", "UAL": "United", "AAL": "American", "DAL": "Delta",
+            "ACA": "Air Canada", "GLO": "Gol Transporte", "TAM": "Tam"
+        };
+
+        const digitWords = { "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "niner" };
+
+        function spellDigitsVHF(str) {
+            return str.split('').map(ch => digitWords[ch] || ch).join(' ');
+        }
+
+        function formatCallsignForSpeech(cs) {
+            const clean = cs.trim().toUpperCase();
+            const match = clean.match(/^([A-Z]{3})(\d+)$/);
+            if (match && airlineTelephonyMap[match[1]]) {
+                return `${airlineTelephonyMap[match[1]]} ${spellDigitsVHF(match[2])}`;
+            }
+            return clean.replace(/\d+/g, m => spellDigitsVHF(m));
+        }
+
+        function humanizeRadioTextForSpeech(rawText) {
+            let t = rawText;
+
+            const rawCs = getSpokenCallsign();
+            const spokenCs = formatCallsignForSpeech(rawCs);
+            const escapedCs = rawCs.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            t = t.replace(new RegExp(`\\b${escapedCs}\\b`, 'g'), spokenCs);
+
+            t = t.replace(/\b(\d{3})\.(\d{1,3})\b/g, (_, p1, p2) => {
+                return `${spellDigitsVHF(p1)} decimal ${spellDigitsVHF(p2)}`;
+            });
+
+            t = t.replace(/\bFL\s*(\d{2,3})\b/gi, (_, num) => {
+                return `flight level ${spellDigitsVHF(num)}`;
+            });
+            t = t.replace(/\bFlight Level\s+(\d{2,3})\b/gi, (_, num) => {
+                return `flight level ${spellDigitsVHF(num)}`;
+            });
+
+            t = t.replace(/\bsquawk\s+(\d{4})\b/gi, (_, num) => `squawk ${spellDigitsVHF(num)}`);
+            t = t.replace(/\bQNH\s+(\d{4})\b/gi, (_, num) => `Q N H ${spellDigitsVHF(num)}`);
+
+            t = t.replace(/\bRunway\s+(\d{2})([LRC])?\b/gi, (_, num, side) => {
+                const sideWord = side === 'L' ? ' left' : (side === 'R' ? ' right' : (side === 'C' ? ' center' : ''));
+                return `Runway ${spellDigitsVHF(num)}${sideWord}`;
+            });
+
+            t = t.replace(/\s*\([A-Z]{4}\)/g, '');
+
+            return t;
+        }
+
+        // ==========================================
+        // 7. STATE MACHINE PENERBANGAN, ATM BORDER FIR & SMART CO-PILOT
+        // ==========================================
+        let originAirport = worldAirports[0];
+        let destAirport = worldAirports[5];
+
+        let flightPhase = "PREFLIGHT";
+        let groundSubStep = "DELIVERY";
+        let activeAirportObj = worldAirports[0];
+        let activeStationName = "Bali Ngurah Rai Ground";
+        let activeFreq = "121.60";
+        let lastInstructorStation = "Bali Ngurah Rai Delivery";
+        let lastInstructorFreq = "121.80";
+        let lastInstructorCc = "ID";
+
+        let lastSectorKey = "";
+        let pendingHandoffStation = "";
+        let pendingHandoffFreq = "";
+        let pendingBorderFir = null;
+        let activeSquawk = "2000";
+
+        // Smart Co-Pilot State
+        let coPilotState = {
+            visible: false,
+            mode: "NONE",
+            btnLabel: "",
+            promptLabel: "",
+            speechText: ""
+        };
+
+        let lastProactiveInstructionTime = 0;
+        let isEmergency = false;
+        let suppressNextHandoff = false;
+        let todAnnounced = false;
+        let atisDestShown = false;
+        let transAltState = "BELOW";
+        let lastTransAlertTime = 0;
+        let postFlightSummaryShown = false;
+        let visitedFirSet = new Set();
+
+        function validateCallsignInput() {
+            const input = document.getElementById('callsign');
+            let val = (input.value || "").trim().toUpperCase();
+            if (/^[A-Z]{3}$/.test(val)) {
+                val = val + "211";
+                input.value = val;
+            } else if (!val) {
+                input.value = "SIA211";
+            }
+            const lbl = document.getElementById('plane-label');
+            if (lbl) lbl.innerText = getCallsignLabel();
+        }
+
+        function generateSquawkCode() {
+            let sqk = "";
+            for (let i = 0; i < 4; i++) {
+                sqk += Math.floor(Math.random() * 7) + 1;
+            }
+            return sqk;
+        }
+
+        function getAircraftSpec() {
+            const type = document.getElementById('aircraft-type').value;
+            const heavyTypes = ["A388", "B77W", "A359", "B789", "B748", "A333"];
+            return { code: type, isHeavy: heavyTypes.includes(type) };
+        }
+
+        function getAssignedRunwayAndGate(airport) {
+            const spec = getAircraftSpec();
+            return {
+                rwy: spec.isHeavy ? airport.rwyHeavy : airport.rwyMed,
+                gate: spec.isHeavy ? airport.gateHeavy : airport.gateMed,
+                spec: spec
+            };
+        }
+
+        function getCallsignLabel() {
+            const spec = getAircraftSpec();
+            const raw = (document.getElementById('callsign').value || "SIA211").trim().toUpperCase();
+            return `${raw} ${spec.code}`;
+        }
+
+        function getSpokenCallsign() {
+            return (document.getElementById('callsign').value || "SIA211").trim().toUpperCase();
+        }
+
+        function getDistanceNM(lat1, lon1, lat2, lon2) {
+            const R = 3440.065;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function calculateTopOfDescentNM(altFeet) {
+            if (altFeet <= 4000) return 15;
+            return Math.round(((altFeet - 2000) / 1000) * 3 + 12);
+        }
+
+        function findNearestAirport(lat, lon, filterCountry = null) {
+            let candidates = filterCountry ? worldAirports.filter(a => a.cc === filterCountry) : worldAirports;
+            if (candidates.length === 0) candidates = worldAirports;
+
+            let nearest = candidates[0];
+            let minDist = Infinity;
+            candidates.forEach(wp => {
+                const dist = getDistanceNM(lat, lon, wp.lat, wp.lon);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = wp;
+                }
+            });
+            return { airport: nearest, distNM: Math.round(minDist), exactDist: minDist };
+        }
+
+        // ==========================================
+        // ILS DATABASE & 2-STEP BRIEFING SYSTEM
+        // ==========================================
+        function getRunwayIlsData(airport, rwyCode) {
+            const cleanRwy = (rwyCode || airport.rwyHeavy).toUpperCase();
+            const headingBase = parseInt(cleanRwy.replace(/[LRC]/g, ''), 10) || 9;
+            const course = String(((headingBase * 10) % 360) || 360).padStart(3, '0');
+
+            let hash = 0;
+            const key = `${airport.code}-${cleanRwy}`;
+            for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) % 190;
+            const mhzWhole = 108 + (hash % 4);
+            const decimals = ["10", "15", "30", "35", "50", "55", "70", "75", "90", "95"];
+            const mhzDec = decimals[hash % decimals.length];
+
+            return {
+                rwy: cleanRwy,
+                freq: `${mhzWhole}.${mhzDec}`,
+                course: course,
+                gsAlt: "3,000 feet"
+            };
+        }
+
+        function getAirportRunwayOptions(airport) {
+            const rwys = new Set([airport.rwyHeavy, airport.rwyMed]);
+            if (airport.rwyHeavy.endsWith('R')) rwys.add(airport.rwyHeavy.replace('R', 'L'));
+            else if (airport.rwyHeavy.endsWith('L')) rwys.add(airport.rwyHeavy.replace('L', 'R'));
+            if (airport.rwyMed.endsWith('R')) rwys.add(airport.rwyMed.replace('R', 'L'));
+            else if (airport.rwyMed.endsWith('L')) rwys.add(airport.rwyMed.replace('L', 'R'));
+            return Array.from(rwys);
+        }
+
+        function toggleIlsSelector() {
+            const bar = document.getElementById('ils-selector-bar');
+            const btn = document.getElementById('btn-ils-info');
+            if (bar.classList.contains('show')) {
+                closeIlsSelector();
+                return;
+            }
+            const targetAp = destAirport || activeAirportObj;
+            const titleEl = document.getElementById('ils-selector-title');
+            const listEl = document.getElementById('ils-rwy-buttons');
+            titleEl.innerText = `📡 PILIH RUNWAY ${targetAp.code} (${targetAp.name.toUpperCase()}):`;
+            listEl.innerHTML = "";
+
+            const options = getAirportRunwayOptions(targetAp);
+            options.forEach(rwy => {
+                const b = document.createElement('button');
+                b.className = 'btn-mini';
+                b.style.borderColor = '#facc15';
+                b.style.color = '#facc15';
+                b.innerText = `RWY ${rwy}`;
+                b.onclick = () => requestIlsInfoForRunway(targetAp, rwy);
+                listEl.appendChild(b);
+            });
+
+            bar.classList.add('show');
+            btn.classList.add('active-ils');
+        }
+
+        function closeIlsSelector() {
+            document.getElementById('ils-selector-bar').classList.remove('show');
+            document.getElementById('btn-ils-info').classList.remove('active-ils');
+        }
+
+        function requestIlsInfoForRunway(targetAp, rwy) {
+            closeIlsSelector();
+            initAudioContext();
+            const spokenCs = getSpokenCallsign();
+            const pilotQuery = `${activeStationName}, ${spokenCs}, request ILS frequency and final approach course for ${targetAp.name} Runway ${rwy}.`;
+
+            cancelAllSpeechSafe();
+            if (!('speechSynthesis' in window)) {
+                deliverIlsResponseFromAtc(targetAp, rwy, pilotQuery);
+                return;
+            }
+
+            const utter = new SpeechSynthesisUtterance(humanizeRadioTextForSpeech(pilotQuery));
+            window._utterancePool.push(utter);
+            const vCoPilot = getCoPilotVoice();
+            if (vCoPilot) utter.voice = vCoPilot;
+            utter.lang = vCoPilot ? vCoPilot.lang : 'en-US';
+            utter.pitch = 1.04;
+            utter.rate = 0.99;
+
+            let done = false;
+            const onFinished = () => {
+                if (done) return;
+                done = true;
+                playVhfClick('end');
+                setTimeout(() => deliverIlsResponseFromAtc(targetAp, rwy, pilotQuery), 260);
+            };
+            utter.onstart = () => playVhfClick('start');
+            utter.onend = onFinished;
+            utter.onerror = onFinished;
+            try {
+                if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+            } catch (e) {}
+            window.speechSynthesis.speak(utter);
+        }
+
+        function deliverIlsResponseFromAtc(targetAp, rwy, pilotQuery) {
+            const spokenCs = getSpokenCallsign();
+            appendLog('pilot', `${getCallsignLabel()} (CO-PILOT)`, pilotQuery);
+
+            const ils = getRunwayIlsData(targetAp, rwy);
+            const distToTarget = Math.round(getDistanceNM(currentLat, currentLon, targetAp.lat, targetAp.lon));
+            const replyStationHeader = `${activeStationName} (${activeFreq})`;
+            const replyCc = activeAirportObj ? activeAirportObj.cc : originAirport.cc;
+
+            let atcReply = "";
+            if (distToTarget > 200) {
+                atcReply = `${spokenCs}, ${activeStationName}. For your flight planning at ${targetAp.name} (${targetAp.code}), Runway ${ils.rwy} ILS frequency is ${ils.freq} MHz, final approach course ${ils.course} degrees, glideslope intercept at ${ils.gsAlt}. Contact ${targetAp.name} Approach closer to destination for active clearance.`;
+            } else {
+                atcReply = `${spokenCs}, ${activeStationName}. Expect Runway ${ils.rwy} at ${targetAp.name}, ILS frequency ${ils.freq} MHz, final approach course ${ils.course} degrees, intercept glideslope at ${ils.gsAlt}.`;
+            }
+
+            setTimeout(() => {
+                appendLog('atc', `📡 ILS BRIEFING — ${replyStationHeader}`, atcReply);
+                speakSingleCountryController(replyCc, atcReply, activeStationName);
+            }, 250);
+        }
+
+        function showDestinationAtisCard() {
+            if (atisDestShown) return;
+            atisDestShown = true;
+            const assign = getAssignedRunwayAndGate(destAirport);
+            const ils = getRunwayIlsData(destAirport, assign.rwy);
+            const logBox = document.getElementById('radio-log');
+            const div = document.createElement('div');
+            div.className = 'msg-atis-card';
+            div.innerHTML = `
+                <strong>📋 [DEST ATIS INFO — ${destAirport.code} (${destAirport.name})]</strong><br>
+                • <strong>Active Landing Runway:</strong> Runway ${assign.rwy} (ILS <strong>${ils.freq} MHz</strong> / CRS <strong>${ils.course}°</strong>)<br>
+                • <strong>Weather &amp; Baro:</strong> Wind 140° at 8 KT | Visibility &gt;10 KM | QNH <strong>1013 hPa</strong> | Temp 24°C
+            `;
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function showPostFlightSummaryCard() {
+            if (postFlightSummaryShown) return;
+            postFlightSummaryShown = true;
+            const totalDist = Math.round(getDistanceNM(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon));
+            const firList = Array.from(visitedFirSet);
+            const firCount = firList.length > 0 ? firList.length : 1;
+            const firNames = firList.length > 0 ? firList.join(" ➔ ") : `${originAirport.fir} ➔ ${destAirport.fir}`;
+
+            const logBox = document.getElementById('radio-log');
+            const div = document.createElement('div');
+            div.className = 'msg-summary-card';
+            div.innerHTML = `
+                <strong>🏁 [POST-FLIGHT SUMMARY — ${getCallsignLabel()}]</strong><br>
+                • <strong>Rute Penerbangan:</strong> ${originAirport.code} (${originAirport.name}) ➔ ${destAirport.code} (${destAirport.name})<br>
+                • <strong>Total Jarak Tempuh:</strong> ${totalDist.toLocaleString()} NM<br>
+                • <strong>Wilayah Udara / FIR Dilintasi (${firCount}):</strong> ${firNames}
+            `;
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function setSmartCoPilotAction(mode, promptLabel, btnLabel, speechText) {
+            coPilotState = {
+                visible: true,
+                mode: mode,
+                promptLabel: promptLabel,
+                btnLabel: btnLabel,
+                speechText: speechText
+            };
+
+            const bar = document.getElementById('copilot-assist-bar');
+            const promptEl = document.getElementById('copilot-prompt-text');
+            const btnEl = document.getElementById('btn-copilot-action');
+
+            bar.classList.remove('border-mode', 'next-step-mode');
+            if (mode === "BORDER_ENTRY") {
+                bar.classList.add('border-mode');
+                btnEl.style.borderColor = "#c084fc";
+                btnEl.style.color = "#e9d5ff";
+            } else if (mode === "NEXT_ACTION") {
+                bar.classList.add('next-step-mode');
+                btnEl.style.borderColor = "#10b981";
+                btnEl.style.color = "#6ee7b7";
+            } else {
+                btnEl.style.borderColor = "#facc15";
+                btnEl.style.color = "#facc15";
+            }
+
+            promptEl.innerText = promptLabel;
+            btnEl.disabled = false;
+            btnEl.innerText = btnLabel;
+
+            if (!isListening) {
+                bar.classList.add('show');
+            }
+        }
+
+        function hideSmartCoPilotBar(clearState = false) {
+            document.getElementById('copilot-assist-bar').classList.remove('show');
+            if (clearState) {
+                coPilotState = { visible: false, mode: "NONE", btnLabel: "", promptLabel: "", speechText: "" };
+            }
+        }
+
+        function suggestNextCoPilotStep() {
+            const spokenCs = getSpokenCallsign();
+            const assignOrigin = getAssignedRunwayAndGate(originAirport);
+            const assignDest = getAssignedRunwayAndGate(destAirport);
+            const distToDest = Math.round(getDistanceNM(currentLat, currentLon, destAirport.lat, destAirport.lon));
+            const tdDistNM = calculateTopOfDescentNM(currentAlt);
+
+            if (pendingBorderFir) {
+                setSmartCoPilotAction(
+                    "BORDER_ENTRY",
+                    `🛂 FIR BORDER: Request ${pendingBorderFir.countryName} airspace entry clearance`,
+                    "🛂 REQUEST FIR ENTRY",
+                    `${pendingBorderFir.firName}, ${spokenCs}, Flight Level ${Math.round(currentAlt/100)}, requesting clearance to enter ${pendingBorderFir.countryName} airspace.`
+                );
+                return;
+            }
+
+            if (currentAlt <= 1500 && flightPhase !== "LANDED_TAXI_IN" && flightPhase !== "PARKED_COMPLETE") {
+                if (groundSubStep === "PUSHBACK") {
+                    setSmartCoPilotAction(
+                        "NEXT_ACTION",
+                        `💡 NEXT STEP: Request Pushback & Start at ${assignOrigin.gate}`,
+                        "🎙️ REQ PUSHBACK",
+                        `${originAirport.name} Ground, ${spokenCs}, at ${assignOrigin.gate}, request pushback and engine start.`
+                    );
+                } else if (groundSubStep === "TAXI") {
+                    setSmartCoPilotAction(
+                        "NEXT_ACTION",
+                        `💡 NEXT STEP: Request Taxi to Runway ${assignOrigin.rwy}`,
+                        "🎙️ REQ TAXI",
+                        `${originAirport.name} Ground, ${spokenCs}, ready to taxi.`
+                    );
+                } else if (groundSubStep === "TOWER_READY") {
+                    setSmartCoPilotAction(
+                        "NEXT_ACTION",
+                        `💡 NEXT STEP: Report Ready for Departure Runway ${assignOrigin.rwy}`,
+                        "🎙️ READY DEPARTURE",
+                        `${originAirport.name} Tower, ${spokenCs}, holding point Runway ${assignOrigin.rwy}, ready for departure.`
+                    );
+                } else {
+                    hideSmartCoPilotBar(true);
+                }
+            } else if (flightPhase === "CLIMB" || flightPhase === "CRUISE") {
+                if (pendingHandoffStation) {
+                    const fl = currentAlt >= 10000 ? `Flight Level ${Math.round(currentAlt/100)}` : `${Math.round(currentAlt)} feet`;
+                    setSmartCoPilotAction(
+                        "NEXT_ACTION",
+                        `💡 NEXT STEP: Initial Check-In with ${pendingHandoffStation}`,
+                        "🎙️ CHECK-IN ATC",
+                        `${pendingHandoffStation}, ${spokenCs}, with you at ${fl}.`
+                    );
+                } else if (distToDest <= tdDistNM + 15 && currentAlt > 15000) {
+                    setSmartCoPilotAction(
+                        "NEXT_ACTION",
+                        `💡 TOP OF DESCENT: Request Descent to FL140 (${destAirport.code})`,
+                        "🎙️ REQ DESCENT",
+                        `${activeStationName}, ${spokenCs}, approaching Top of Descent, request descent to Flight Level 140.`
+                    );
+                } else {
+                    hideSmartCoPilotBar(true);
+                }
+            } else if (flightPhase === "DESCENT" || flightPhase === "APPROACH") {
+                if (distToDest <= 30 && currentAlt <= 14000) {
+                    setSmartCoPilotAction(
+                        "NEXT_ACTION",
+                        `💡 ARRIVAL: Request ILS Approach Runway ${assignDest.rwy}`,
+                        "🎙️ REQ ILS APPROACH",
+                        `${destAirport.name} Approach, ${spokenCs}, request ILS approach Runway ${assignDest.rwy}.`
+                    );
+                } else {
+                    hideSmartCoPilotBar(true);
+                }
+            } else if (flightPhase === "LANDED_TAXI_IN") {
+                setSmartCoPilotAction(
+                    "NEXT_ACTION",
+                    `💡 ARRIVED: Request Taxi to ${assignDest.gate}`,
+                    "🎙️ REQ TAXI TO GATE",
+                    `${destAirport.name} Ground, ${spokenCs}, runway vacated, request taxi to ${assignDest.gate}.`
+                );
+            } else {
+                hideSmartCoPilotBar(true);
+            }
+        }
+
+        function executeSmartCoPilot() {
+            if (!coPilotState.visible || !coPilotState.speechText) return;
+            const msgToSend = coPilotState.speechText;
+            const btnEl = document.getElementById('btn-copilot-action');
+            btnEl.disabled = true;
+            btnEl.innerText = "🔊 CO-PILOT SPEAKING...";
+
+            speechGenerationId++;
+            const myGen = speechGenerationId;
+            cancelAllSpeechSafe();
+
+            if (!('speechSynthesis' in window)) {
+                handlePilotMessage(msgToSend, false, true);
+                return;
+            }
+
+            const spokenText = humanizeRadioTextForSpeech(msgToSend);
+            let isCompleted = false;
+            let safetyWatchdog = null;
+
+            const finishCoPilotSpeech = () => {
+                if (isCompleted) return;
+                isCompleted = true;
+                clearTimeout(safetyWatchdog);
+                stopTtsKeepAlive();
+                stopVhfStatic();
+                playVhfClick('end');
+                setTimeout(() => {
+                    handlePilotMessage(msgToSend, false, true);
+                }, 280);
+            };
+
+            // Watchdog maksimal 9 detik jika TTS browser tidak memicu onend
+            safetyWatchdog = setTimeout(finishCoPilotSpeech, Math.min(9500, Math.max(3000, spokenText.length * 85)));
+
+            setTimeout(() => {
+                if (myGen !== speechGenerationId) {
+                    finishCoPilotSpeech();
+                    return;
+                }
+                const utter = new SpeechSynthesisUtterance(spokenText);
+                window._utterancePool.push(utter);
+
+                const vCoPilot = getCoPilotVoice();
+                if (vCoPilot) utter.voice = vCoPilot;
+                utter.lang = vCoPilot ? vCoPilot.lang : 'en-US';
+                utter.pitch = 1.04;
+                utter.rate = 0.99;
+
+                utter.onstart = () => {
+                    playVhfClick('start');
+                    startVhfStatic();
+                    startTtsKeepAlive();
+                };
+                utter.onend = finishCoPilotSpeech;
+                utter.onerror = finishCoPilotSpeech;
+
+                try {
+                    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                } catch (e) {}
+                window.speechSynthesis.speak(utter);
+            }, 60);
+        }
+
+        function activateFlightPlan(keepDemoRunning = false) {
+            if (!keepDemoRunning && demoInterval) {
+                stopDemoFlightUI();
+            }
+            validateCallsignInput();
+            originAirport = parseAirportFromInput(document.getElementById('fp-origin').value, worldAirports[0]);
+            destAirport = parseAirportFromInput(document.getElementById('fp-dest').value, worldAirports[5]);
+
+            document.getElementById('fp-origin').value = `${originAirport.code} - ${originAirport.name}`;
+            document.getElementById('fp-dest').value = `${destAirport.code} - ${destAirport.name}`;
+
+            if (map && map.getSource('route-src')) {
+                map.getSource('route-src').setData({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'MultiLineString',
+                        coordinates: generateGreatCircleMultiLine(originAirport, destAirport, 72)
+                    }
+                });
+            }
+
+            flightTrailSegments = [[]];
+            if (map && map.getSource('trail-src')) {
+                map.getSource('trail-src').setData({ type: 'FeatureCollection', features: [] });
+            }
+
+            isEmergency = false;
+            todAnnounced = false;
+            atisDestShown = false;
+            postFlightSummaryShown = false;
+            visitedFirSet = new Set([originAirport.fir]);
+            transAltState = currentAlt > 10000 ? "ABOVE" : "BELOW";
+            pendingHandoffStation = "";
+            pendingHandoffFreq = "";
+            pendingBorderFir = null;
+            lastProactiveInstructionTime = 0;
+            updateAirportRadarRings();
+            updateEmergencyButtonUI();
+            hideSmartCoPilotBar(true);
+            suppressNextHandoff = true;
+
+            if (currentAlt > 1500) {
+                const detectedFir = detectCurrentFirPolygon(currentLat, currentLon);
+                const nearest = detectedFir ? findNearestAirport(currentLat, currentLon, detectedFir.cc) : findNearestAirport(currentLat, currentLon);
+                activeAirportObj = nearest.airport;
+                activeStationName = activeAirportObj.firName;
+                activeFreq = activeAirportObj.accFreq;
+                lastInstructorStation = activeStationName;
+                lastInstructorFreq = activeFreq;
+                lastInstructorCc = activeAirportObj.cc;
+                activeTzOffset = activeAirportObj.tz;
+                firSelect.value = activeAirportObj.code;
+                lastSectorKey = `${activeAirportObj.cc}-ACC-${activeStationName}`;
+                groundSubStep = "AIRBORNE";
+
+                const fl = currentAlt >= 10000 ? `FL${Math.round(currentAlt/100)}` : `${Math.round(currentAlt)} feet`;
+                const pilotAirMsg = `${activeStationName}, ${getSpokenCallsign()}, airborne at ${fl}, requesting IFR clearance enroute to ${destAirport.name} (${destAirport.code}).`;
+                handlePilotMessage(pilotAirMsg, true);
+            } else {
+                flightPhase = "PREFLIGHT";
+                groundSubStep = "DELIVERY";
+                activeAirportObj = originAirport;
+                activeStationName = `${originAirport.name} Delivery`;
+                activeFreq = originAirport.delFreq;
+                lastInstructorStation = activeStationName;
+                lastInstructorFreq = activeFreq;
+                lastInstructorCc = originAirport.cc;
+                activeTzOffset = originAirport.tz;
+                firSelect.value = originAirport.code;
+                lastSectorKey = `${originAirport.cc}-GND-${originAirport.name} Ground`;
+
+                currentLat = originAirport.lat;
+                currentLon = originAirport.lon;
+                updateAircraftPosition(currentLat, currentLon, 90, 0, 0);
+                centerOnPlane();
+
+                const pilotInitMsg = `${originAirport.name} Delivery, ${getSpokenCallsign()}, at ${getAssignedRunwayAndGate(originAirport).gate}, request IFR clearance to ${destAirport.name} (${destAirport.code}) as filed.`;
+                handlePilotMessage(pilotInitMsg, true);
+            }
+        }
+
+        function manualConnectATM() {
+            const targetAp = worldAirports.find(a => a.code === firSelect.value);
+            if (!targetAp) return;
+
+            const distToTarget = Math.round(getDistanceNM(currentLat, currentLon, targetAp.lat, targetAp.lon));
+            const fl = currentAlt >= 10000 ? `FL${Math.round(currentAlt/100)}` : `${Math.round(currentAlt)} feet`;
+
+            const pilotCheckIn = `${targetAp.firName}, ${getSpokenCallsign()}, checking in at ${fl}, ${distToTarget} miles from ${targetAp.code}.`;
+            activeAirportObj = targetAp;
+            activeStationName = targetAp.firName;
+            activeFreq = targetAp.accFreq;
+            lastInstructorStation = activeStationName;
+            lastInstructorFreq = activeFreq;
+            lastInstructorCc = targetAp.cc;
+            activeTzOffset = targetAp.tz;
+            lastSectorKey = `${targetAp.cc}-ACC-${targetAp.firName}`;
+            handlePilotMessage(pilotCheckIn);
+        }
+
+        function toggleEmergency() {
+            isEmergency = !isEmergency;
+            updateEmergencyButtonUI();
+            const spokenCs = getSpokenCallsign();
+
+            if (isEmergency) {
+                activeSquawk = "7700";
+                const nearest = findNearestAirport(currentLat, currentLon);
+                const emgMsg = `MAYDAY MAYDAY MAYDAY, ${activeStationName}, ${spokenCs}, declaring emergency, squawking 7700, request immediate vectors and priority landing at ${nearest.airport.name} (${nearest.airport.code})!`;
+                handlePilotMessage(emgMsg);
+            } else {
+                activeSquawk = "4215";
+                const cancelMsg = `${activeStationName}, ${spokenCs}, cancel MAYDAY, emergency resolved, resetting transponder to 4215, resuming normal navigation to ${destAirport.code}.`;
+                handlePilotMessage(cancelMsg);
+            }
+        }
+
+        function updateEmergencyButtonUI() {
+            const btn = document.getElementById('btn-emg-toggle');
+            if (isEmergency) {
+                btn.classList.add('active-emg');
+                btn.innerText = "✅ CANCEL 7700";
+            } else {
+                btn.classList.remove('active-emg');
+                btn.innerText = "🚨 7700";
+            }
+        }
+
+        function updateAircraftPosition(lat, lon, heading = 90, alt = 0, speed = 0) {
+            currentLat = lat;
+            currentLon = lon;
+            currentHeading = heading;
+            currentAlt = alt;
+            currentSpeed = speed;
+
+            if (planeMarker) {
+                planeMarker.setLngLat([lon, lat]);
+                if (planeMarker.getElement() && planeMarker.getElement().style.zIndex !== '9999') {
+                    planeMarker.getElement().style.zIndex = '9999';
+                }
+                const lbl = document.getElementById('plane-label');
+                if (lbl) lbl.innerText = getCallsignLabel();
+                const svgEl = document.getElementById('plane-svg');
+                if (svgEl) svgEl.style.transform = `rotate(${heading}deg)`;
+            }
+
+            const activeSeg = flightTrailSegments[flightTrailSegments.length - 1];
+            if (activeSeg.length > 0 && Math.abs(lon - activeSeg[activeSeg.length - 1][0]) > 180) {
+                flightTrailSegments.push([[lon, lat]]);
+            } else {
+                activeSeg.push([lon, lat]);
+                if (activeSeg.length > 250) activeSeg.shift();
+            }
+
+            if (map && map.getSource('trail-src')) {
+                const validSegs = flightTrailSegments.filter(s => s.length > 1);
+                if (validSegs.length > 0) {
+                    map.getSource('trail-src').setData({
+                        type: 'Feature',
+                        geometry: { type: 'MultiLineString', coordinates: validSegs }
+                    });
+                }
+            }
+
+            if (map && autoFollowPlane) {
+                map.easeTo({ center: [lon, lat], duration: 200 });
+            }
+
+            const fl = alt >= 10000 ? `FL${Math.round(alt/100)}` : `${Math.round(alt)} FT`;
+            document.getElementById('ui-alt-hdg').innerText = `${fl} / ${Math.round(speed)} KT / ${String(Math.round(heading)).padStart(3, '0')}°`;
+
+            const detectedFir = detectCurrentFirPolygon(lat, lon);
+            const nearest = detectedFir ? findNearestAirport(lat, lon, detectedFir.cc) : findNearestAirport(lat, lon);
+            const ap = nearest.airport;
+            activeTzOffset = ap.tz;
+
+            if (!isUserManuallySelectingFir && firSelect.value !== ap.code) {
+                firSelect.value = ap.code;
+            }
+
+            const distToOrigin = getDistanceNM(lat, lon, originAirport.lat, originAirport.lon);
+            const distToDest = getDistanceNM(lat, lon, destAirport.lat, destAirport.lon);
+            const distToDestRound = Math.round(distToDest);
+            const tdDistNM = calculateTopOfDescentNM(alt);
+            const spokenCs = getSpokenCallsign();
+
+            if (alt < 150 && speed > 45 && (flightPhase === "PREFLIGHT" || flightPhase === "TAXI_OUT")) {
+                flightPhase = "CLIMB";
+                groundSubStep = "AIRBORNE";
+            } else if (alt >= 3000 && alt < 15000 && flightPhase !== "DESCENT" && flightPhase !== "APPROACH") {
+                flightPhase = "CLIMB";
+                groundSubStep = "AIRBORNE";
+            } else if (alt >= 15000 && distToDest > tdDistNM) {
+                flightPhase = "CRUISE";
+            } else if (alt < 15000 && alt >= 3000 && (flightPhase === "CRUISE" || distToDest <= tdDistNM)) {
+                flightPhase = "DESCENT";
+            } else if (alt < 3000 && alt >= 150 && (flightPhase === "DESCENT" || flightPhase === "APPROACH" || distToDest < 25)) {
+                flightPhase = "APPROACH";
+            } else if (alt < 150 && speed < 35 && (flightPhase === "APPROACH" || flightPhase === "DESCENT" || flightPhase === "LANDED_TAXI_IN")) {
+                flightPhase = "LANDED_TAXI_IN";
+                if (coPilotState.mode !== "READBACK") suggestNextCoPilotStep();
+            }
+
+            const remToTd = distToDestRound - tdDistNM;
+            const tdLabel = (alt > 12000 && remToTd > 0) ? ` | T/D ${remToTd}NM` : "";
+            document.getElementById('ui-phase').innerText = isEmergency
+                ? `🚨 EMERGENCY (SQK 7700)`
+                : `${flightPhase} (${distToDestRound} NM${tdLabel})`;
+
+            const firTitle = detectedFir ? detectedFir.id : ap.fir;
+            if (firTitle) visitedFirSet.add(firTitle);
+            document.getElementById('ui-fir').innerText = `${firTitle} // SQK ${activeSquawk}`;
+
+            if (!atisDestShown && alt > 8000 && distToDestRound <= 155 && distToDestRound > 20) {
+                showDestinationAtisCard();
+            }
+
+            const nowTs = Date.now();
+            if (transAltState === "BELOW" && alt >= 10200) {
+                transAltState = "ABOVE";
+                if (nowTs - lastTransAlertTime > 15000) {
+                    lastTransAlertTime = nowTs;
+                    const stdMsg = `${spokenCs}, passing Transition Altitude 10,000 feet, set altimeter Standard 1013, landing lights off.`;
+                    appendLog('atc', `🎚️ TRANSITION ALTITUDE (10,000 FT)`, stdMsg);
+                    if (!isListening && (!window.speechSynthesis || !window.speechSynthesis.speaking)) {
+                        speakSingleCountryController(ap.cc, stdMsg, activeStationName);
+                    }
+                }
+            } else if (transAltState === "ABOVE" && alt <= 9800) {
+                transAltState = "BELOW";
+                if (nowTs - lastTransAlertTime > 15000) {
+                    lastTransAlertTime = nowTs;
+                    const qnhMsg = `${spokenCs}, passing Transition Level 10,000 feet, set local QNH 1013, landing lights on.`;
+                    appendLog('atc', `🎚️ TRANSITION LEVEL (10,000 FT)`, qnhMsg);
+                    if (!isListening && (!window.speechSynthesis || !window.speechSynthesis.speaking)) {
+                        speakSingleCountryController(ap.cc, qnhMsg, activeStationName);
+                    }
+                }
+            }
+
+            let currentSectorType = "ACC";
+            let currentStation = ap.firName;
+            let currentFreq = ap.accFreq;
+            let sectorAirport = ap;
+
+            const isNearOrigin = distToOrigin <= 45;
+            const isNearDest = distToDest <= 55;
+
+            if (alt < 3000 && (distToOrigin <= 12 || distToDest <= 12)) {
+                sectorAirport = distToOrigin <= 12 ? originAirport : destAirport;
+                if (speed < 30 && alt < 100) {
+                    currentSectorType = "GND";
+                    currentStation = `${sectorAirport.name} Ground`;
+                    currentFreq = sectorAirport.gndFreq;
+                } else {
+                    currentSectorType = "TWR";
+                    currentStation = `${sectorAirport.name} Tower`;
+                    currentFreq = sectorAirport.twrFreq;
+                }
+            } else if (alt < 15000 && (isNearOrigin || isNearDest)) {
+                sectorAirport = isNearOrigin ? originAirport : destAirport;
+                currentSectorType = "APP";
+                currentStation = `${sectorAirport.name} Approach`;
+                currentFreq = sectorAirport.appFreq;
+            } else {
+                sectorAirport = ap;
+                currentSectorType = "ACC";
+                currentStation = ap.firName;
+                currentFreq = ap.accFreq;
+            }
+
+            document.getElementById('ui-sector').innerText = `${sectorAirport.code} ${currentSectorType} // ${currentFreq} MHz`;
+
+            const sectorKey = `${sectorAirport.cc}-${currentSectorType}-${currentStation}`;
+            if (lastSectorKey === "" || suppressNextHandoff) {
+                suppressNextHandoff = false;
+                lastSectorKey = sectorKey;
+                activeStationName = currentStation;
+                activeFreq = currentFreq;
+                activeAirportObj = sectorAirport;
+            } else if (lastSectorKey !== sectorKey) {
+                const prevStation = activeStationName;
+                const prevFreq = activeFreq;
+                const prevAirport = activeAirportObj;
+                lastSectorKey = sectorKey;
+                pendingHandoffStation = currentStation;
+                pendingHandoffFreq = currentFreq;
+                activeAirportObj = sectorAirport;
+
+                lastInstructorStation = prevStation;
+                lastInstructorFreq = prevFreq;
+                lastInstructorCc = prevAirport.cc;
+
+                const isCountryChange = prevAirport.cc !== sectorAirport.cc;
+                const targetCountryName = detectedFir ? detectedFir.countryName : sectorAirport.countryName;
+
+                if (isCountryChange && currentSectorType === "ACC") {
+                    pendingBorderFir = {
+                        firName: currentStation,
+                        freq: currentFreq,
+                        cc: sectorAirport.cc,
+                        countryName: targetCountryName
+                    };
+                    const localBye = getLocalGreeting(prevAirport.cc, "bye");
+                    const borderHandoffCmd = `${spokenCs}, ${prevStation}. Approaching ${targetCountryName} FIR boundary. Contact ${currentStation} on ${currentFreq} for international airspace entry clearance. ${localBye}!`;
+                    const readbackSample = `Contact ${currentStation} on ${currentFreq}, ${spokenCs}.`;
+
+                    appendLog('atc', `🛂 FIR BORDER HANDOFF (${prevStation} ➔ ${currentStation})`, borderHandoffCmd, false, true);
+                    speakSingleCountryController(prevAirport.cc, borderHandoffCmd);
+                    setSmartCoPilotAction(
+                        "READBACK",
+                        `⚠️ READBACK REQUIRED: "${readbackSample}"`,
+                        "🎙️ CO-PILOT READBACK",
+                        readbackSample
+                    );
+                } else {
+                    const handoffCmd = `${spokenCs}, ${prevStation}. Good job with us, contact ${currentStation} on ${currentFreq}.`;
+                    const readbackSample = `Contact ${currentStation} on ${currentFreq}, ${spokenCs}.`;
+
+                    appendLog('atc', `📡 ATC HANDOFF (${prevStation} ➔ ${currentStation})`, handoffCmd);
+                    speakSingleCountryController(prevAirport.cc, handoffCmd);
+                    setSmartCoPilotAction(
+                        "READBACK",
+                        `⚠️ READBACK REQUIRED: "${readbackSample}"`,
+                        "🎙️ CO-PILOT READBACK",
+                        readbackSample
+                    );
+                }
+
+                activeStationName = currentStation;
+                activeFreq = currentFreq;
+                lastProactiveInstructionTime = Date.now();
+            }
+
+            const now = Date.now();
+            if (alt > 8000 && coPilotState.mode !== "READBACK" && (now - lastProactiveInstructionTime > 90000)) {
+                const bearingToDest = Math.round(calculateBearing(lat, lon, destAirport.lat, destAirport.lon));
+                const headingDiff = Math.abs(((heading - bearingToDest + 540) % 360) - 180);
+
+                let atcCmd = "";
+                let rbSample = "";
+
+                if (!todAnnounced && distToDest <= tdDistNM && alt > 15000) {
+                    todAnnounced = true;
+                    lastProactiveInstructionTime = now;
+                    lastInstructorStation = activeStationName;
+                    lastInstructorFreq = activeFreq;
+                    lastInstructorCc = sectorAirport.cc;
+
+                    atcCmd = `${spokenCs}, ${activeStationName}. Approaching Top of Descent, when ready descend and maintain Flight Level 140, expect ILS Runway ${getAssignedRunwayAndGate(destAirport).rwy} at ${destAirport.name}.`;
+                    rbSample = `Descending Flight Level 140, ${spokenCs}.`;
+                } else if (headingDiff > 15 && distToDest > 25) {
+                    lastProactiveInstructionTime = now;
+                    lastInstructorStation = activeStationName;
+                    lastInstructorFreq = activeFreq;
+                    lastInstructorCc = sectorAirport.cc;
+
+                    atcCmd = `${spokenCs}, ${activeStationName}. Radar shows you slightly off course, turn heading ${String(bearingToDest).padStart(3, '0')} degrees, proceed direct ${destAirport.name}.`;
+                    rbSample = `Turning heading ${String(bearingToDest).padStart(3, '0')}, direct ${destAirport.code}, ${spokenCs}.`;
+                }
+
+                if (atcCmd) {
+                    appendLog('atc', `🎙️ ATC INSTRUCTION (${activeStationName})`, atcCmd);
+                    speakSingleCountryController(sectorAirport.cc, atcCmd);
+                    setSmartCoPilotAction(
+                        "READBACK",
+                        `⚠️ READBACK REQUIRED: "${rbSample}"`,
+                        "🎙️ CO-PILOT READBACK",
+                        rbSample
+                    );
+                }
+            }
+        }
+
+        // ==========================================
+        // 8. MESIN SUARA 1 NEGARA = 1 SUARA PETUGAS TUNGGAL + VHF AUDIO FX
+        // ==========================================
+        let availableVoices = [];
+        const stationVoiceCache = {};
+
+        function loadAndCheckVoices() {
+            const badge = document.getElementById('voice-engine-badge');
+            if (!badge) return;
+            if (!('speechSynthesis' in window)) {
+                badge.innerText = "🎙️ TTS UNSUPPORTED";
+                return;
+            }
+            availableVoices = window.speechSynthesis.getVoices();
+            const naturalCount = availableVoices.filter(v => v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('neural') || v.name.toLowerCase().includes('online')).length;
+            if (naturalCount > 0) {
+                badge.innerText = `🎙️ NEURAL HUMAN (${naturalCount})`;
+                badge.style.borderColor = "#10b981";
+                badge.style.color = "#10b981";
+            } else if (availableVoices.length > 0) {
+                badge.innerText = `🎙️ STD VOICE (${availableVoices.length})`;
+                badge.style.borderColor = "#f59e0b";
+                badge.style.color = "#facc15";
+            } else {
+                badge.innerText = "🎙️ SYSTEM VOICE READY";
+                badge.style.borderColor = "#38bdf8";
+                badge.style.color = "#38bdf8";
+            }
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = loadAndCheckVoices;
+        }
+        loadAndCheckVoices();
+        setTimeout(loadAndCheckVoices, 500);
+        setTimeout(loadAndCheckVoices, 1500);
+
+        function hashStationKey(str) {
+            let h = 0;
+            for (let i = 0; i < str.length; i++) h = (h * 33 + str.charCodeAt(i)) >>> 0;
+            return h;
+        }
+
+        function getSingleVoiceForCountry(countryCode, accentLang, stationKey = "") {
+            if (!('speechSynthesis' in window)) return null;
+            if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
+            const cacheKey = `${countryCode}::${stationKey || activeStationName}`;
+            if (stationVoiceCache[cacheKey]) return stationVoiceCache[cacheKey];
+
+            const allEnglishNeural = availableVoices.filter(v =>
+                v.lang.toLowerCase().startsWith('en') &&
+                (v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('neural') || v.name.toLowerCase().includes('online'))
+            );
+            const allEnglishAny = availableVoices.filter(v => v.lang.toLowerCase().startsWith('en'));
+
+            const target = accentLang.toLowerCase();
+            const regionalNeural = allEnglishNeural.filter(v => v.lang.toLowerCase() === target);
+            const pool = regionalNeural.length >= 2 ? regionalNeural : (allEnglishNeural.length > 0 ? allEnglishNeural : allEnglishAny);
+
+            const idx = hashStationKey(cacheKey) % Math.max(1, pool.length);
+            const chosen = pool[idx] || availableVoices[0];
+
+            if (chosen) stationVoiceCache[cacheKey] = chosen;
+            return chosen;
+        }
+
+        function getCoPilotVoice() {
+            if (!('speechSynthesis' in window)) return null;
+            if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
+            return availableVoices.find(v =>
+                v.lang.toLowerCase().includes('en-us') &&
+                (v.name.toLowerCase().includes('guy') || v.name.toLowerCase().includes('andrew') || v.name.toLowerCase().includes('christopher') || v.name.toLowerCase().includes('natural'))
+            ) || availableVoices.find(v => v.lang.toLowerCase().startsWith('en'));
+        }
+
+        let speechGenerationId = 0;
+
+        function speakSingleCountryController(countryCode, icaoEnglishText, stationKey = "") {
+            if (isListening || !icaoEnglishText || !('speechSynthesis' in window)) return;
+            speechGenerationId++;
+            const myGen = speechGenerationId;
+            cancelAllSpeechSafe();
+
+            const effectiveStation = stationKey || activeStationName;
+            const profile = getRegionalVoiceProfile(countryCode);
+            const humanizedSpeech = humanizeRadioTextForSpeech(icaoEnglishText);
+            const singleVoice = getSingleVoiceForCountry(countryCode, profile.accentLang, effectiveStation);
+
+            const stationOffset = ((hashStationKey(effectiveStation) % 5) - 2) * 0.025;
+
+            setTimeout(() => {
+                if (isListening || myGen !== speechGenerationId) return;
+                const utter = new SpeechSynthesisUtterance(humanizedSpeech);
+                window._utterancePool.push(utter);
+
+                if (singleVoice) {
+                    utter.voice = singleVoice;
+                    utter.lang = singleVoice.lang;
+                } else {
+                    utter.lang = profile.accentLang;
+                }
+                utter.rate = profile.rate;
+                utter.pitch = Math.max(0.88, Math.min(1.12, profile.pitch + stationOffset));
+
+                utter.onstart = () => {
+                    if (myGen !== speechGenerationId) return;
+                    playVhfClick('start');
+                    startVhfStatic();
+                    startTtsKeepAlive();
+                };
+                utter.onend = () => {
+                    if (myGen !== speechGenerationId) return;
+                    stopTtsKeepAlive();
+                    stopVhfStatic();
+                    playVhfClick('end');
+                };
+                utter.onerror = () => {
+                    if (myGen !== speechGenerationId) return;
+                    stopTtsKeepAlive();
+                    stopVhfStatic();
+                };
+
+                try {
+                    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                } catch (e) {}
+                window.speechSynthesis.speak(utter);
+            }, 60);
+        }
+
+        // ==========================================
+        // 9. MIKROFON PERSISTENT SESSION LOCK (ANTI-PROMPT BERULANG & TANPA PESAN ERROR MENGGANGGU)
+        // ==========================================
+        let recognition = null;
+        let isListening = false;
+        let isStartingMic = false;
+        let finalTranscript = "";
+        let interimTranscript = "";
+        let silenceTimer = null;
+        let micAbortedOrDenied = false;
+        let persistentMicStream = null;
+        let micPermissionGranted = false;
+        const isLocalFileProtocol = (window.location.protocol === 'file:');
+
+        function updateMicPillUI(state, customText = "") {
+            const pill = document.getElementById('mic-status-pill');
+            if (!pill) return;
+            pill.classList.remove('ready', 'warn');
+            if (state === 'ready') {
+                pill.classList.add('ready');
+                pill.innerText = customText || "🎤 MIC: LOCKED ON";
+            } else if (state === 'listening') {
+                pill.classList.add('ready');
+                pill.innerText = customText || "🔴 MIC: LIVE";
+            } else if (state === 'warn') {
+                pill.classList.add('warn');
+                pill.innerText = customText || (isLocalFileProtocol ? "🎤 MIC: LOCALHOST TIP" : "🎤 MIC: CLICK TO ALLOW");
+            } else {
+                pill.innerText = customText || "🎤 MIC: STANDBY";
+            }
+        }
+
+        function resetTalkButtonUI() {
+            const btn = document.getElementById('btn-talk');
+            if (btn) {
+                btn.classList.remove('listening');
+                btn.innerText = "🎙️ BICARA KE ATC [SPASI / R-CTRL]";
+            }
+            if (micPermissionGranted) {
+                updateMicPillUI('ready');
+            }
+        }
+
+        // Mengunci stream audio mikrofon sekali saja selama tab terbuka agar browser tidak meminta izin berulang kali
+        async function primeMicrophoneSession(userTriggered = false) {
+            if (persistentMicStream && persistentMicStream.active) {
+                const tracks = persistentMicStream.getAudioTracks();
+                if (tracks.length > 0 && tracks[0].readyState === 'live') {
+                    micPermissionGranted = true;
+                    updateMicPillUI('ready');
+                    return true;
+                }
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return false;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                persistentMicStream = stream;
+                micPermissionGranted = true;
+                updateMicPillUI('ready');
+                return true;
+            } catch (err) {
+                micPermissionGranted = false;
+                if (isLocalFileProtocol) {
+                    updateMicPillUI('warn', "🎤 USE LOCALHOST FOR 1x MIC");
+                    if (userTriggered) {
+                        const input = document.getElementById('manual-msg');
+                        if (input) {
+                            input.placeholder = "Tips: Jalankan lewat http://localhost agar izin mic Edge tersimpan permanen, atau ketik radio di sini...";
+                            input.focus();
+                        }
+                    }
+                } else {
+                    updateMicPillUI('warn', "🎤 ALLOW MIC IN EDGE");
+                }
+                return false;
+            }
+        }
+
+        // Cek status izin mikrofon secara halus saat halaman dimuat (tanpa popup)
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'microphone' }).then(status => {
+                if (status.state === 'granted') {
+                    primeMicrophoneSession(false);
+                } else if (isLocalFileProtocol) {
+                    updateMicPillUI('warn', "🎤 MIC: READY (1x ALLOW)");
+                }
+                status.onchange = () => {
+                    if (status.state === 'granted') {
+                        primeMicrophoneSession(false);
+                    } else {
+                        micPermissionGranted = false;
+                        updateMicPillUI('warn');
+                    }
+                };
+            }).catch(() => {});
+        }
+
+        function createSpeechRecognitionInstance() {
+            if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) return null;
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const rec = new SpeechRecognition();
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.maxAlternatives = 1;
+            rec.lang = 'en-US';
+
+            rec.onstart = () => {
+                isStartingMic = false;
+                isListening = true;
+                micAbortedOrDenied = false;
+                micPermissionGranted = true;
+                finalTranscript = "";
+                interimTranscript = "";
+                playVhfClick('start');
+                updateMicPillUI('listening');
+                hideSmartCoPilotBar(false);
+
+                const btn = document.getElementById('btn-talk');
+                if (btn) {
+                    btn.classList.add('listening');
+                    btn.innerText = "🔴 MENDENGARKAN... (SILAKAN BICARA)";
+                }
+            };
+
+            rec.onresult = (event) => {
+                cancelAllSpeechSafe();
+                clearTimeout(silenceTimer);
+                let currentInterim = "";
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcriptChunk = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcriptChunk + " ";
+                    } else {
+                        currentInterim += transcriptChunk + " ";
+                    }
+                }
+                interimTranscript = currentInterim.trim();
+
+                const btn = document.getElementById('btn-talk');
+                const previewText = (finalTranscript + " " + interimTranscript).trim();
+                if (btn && previewText) {
+                    btn.innerText = `🔴 "${previewText.slice(-34)}"`;
+                }
+
+                silenceTimer = setTimeout(() => {
+                    if (isListening && recognition) {
+                        try { recognition.stop(); } catch (e) {}
+                    }
+                }, 2100);
+            };
+
+            rec.onerror = (event) => {
+                clearTimeout(silenceTimer);
+                isStartingMic = false;
+                isListening = false;
+                resetTalkButtonUI();
+
+                if (event.error === 'aborted' || event.error === 'no-speech') {
+                    return;
+                }
+
+                micAbortedOrDenied = true;
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    micPermissionGranted = false;
+                    updateMicPillUI('warn', isLocalFileProtocol ? "🎤 BUKA VIA LOCALHOST" : "🎤 IZINKAN MIC DI EDGE");
+                    const input = document.getElementById('manual-msg');
+                    if (input) {
+                        input.placeholder = isLocalFileProtocol
+                            ? "Edge memblokir mic permanen di file:// — jalankan via http://localhost atau ketik di sini..."
+                            : "Klik ikon gembok/mikrofon di address bar Edge -> Izinkan, atau ketik di sini...";
+                    }
+                } else if (event.error === 'audio-capture') {
+                    updateMicPillUI('warn', "🎤 NO MIC HARDWARE");
+                } else if (event.error === 'network') {
+                    updateMicPillUI('warn', "🎤 SPEECH NET OFFLINE");
+                }
+            };
+
+            rec.onend = () => {
+                const wasListening = isListening;
+                isStartingMic = false;
+                isListening = false;
+                clearTimeout(silenceTimer);
+                resetTalkButtonUI();
+
+                if (micAbortedOrDenied) {
+                    finalTranscript = "";
+                    interimTranscript = "";
+                    if (coPilotState.visible) {
+                        document.getElementById('copilot-assist-bar').classList.add('show');
+                    }
+                    return;
+                }
+
+                if (wasListening) {
+                    playVhfClick('end');
+                }
+
+                const combinedTranscript = (finalTranscript + " " + interimTranscript).trim();
+                let spokenText = combinedTranscript
+                    .replace(/\bsnapper\b/gi, "Singapore")
+                    .replace(/\bsinga\b/gi, "Singapore")
+                    .replace(/\btexting\b/gi, "taxiing");
+
+                finalTranscript = "";
+                interimTranscript = "";
+
+                if (spokenText.length >= 2) {
+                    handlePilotMessage(spokenText);
+                } else if (coPilotState.visible) {
+                    document.getElementById('copilot-assist-bar').classList.add('show');
+                }
+            };
+
+            return rec;
+        }
+
+        recognition = createSpeechRecognitionInstance();
+
+        async function startRecognitionDirectly() {
+            if (isStartingMic || isListening) return;
+            isStartingMic = true;
+
+            // Kunci stream mikrofon di latar belakang agar sesi tetap hangat tanpa prompt berulang
+            await primeMicrophoneSession(false);
+
+            if (!recognition) {
+                recognition = createSpeechRecognitionInstance();
+            }
+            if (!recognition) {
+                isStartingMic = false;
+                return;
+            }
+
+            try {
+                recognition.start();
+            } catch (e) {
+                isStartingMic = false;
+                const msg = (e && e.message) ? e.message : String(e);
+                if (msg.toLowerCase().includes('already started')) {
+                    try { recognition.abort(); } catch (errStop) {}
+                    recognition = createSpeechRecognitionInstance();
+                    setTimeout(() => {
+                        try {
+                            isStartingMic = true;
+                            recognition.start();
+                        } catch (errRetry) {
+                            isStartingMic = false;
+                        }
+                    }, 120);
+                }
+            }
+        }
+
+        function toggleVoiceInput() {
+            initAudioContext();
+            if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+                updateMicPillUI('warn', "🎤 SPEECH UNSUPPORTED");
+                const input = document.getElementById('manual-msg');
+                if (input) input.focus();
+                return;
+            }
+
+            if (isListening) {
+                clearTimeout(silenceTimer);
+                isListening = false;
+                isStartingMic = false;
+                resetTalkButtonUI();
+                try { recognition.stop(); } catch (e) {}
+                return;
+            }
+
+            finalTranscript = "";
+            interimTranscript = "";
+            micAbortedOrDenied = false;
+            startRecognitionDirectly();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+            if (e.code === 'Space' || e.code === 'ControlRight') { e.preventDefault(); toggleVoiceInput(); }
+            else if (e.key.toLowerCase() === 'c') { centerOnPlane(); }
+        });
+
+        function sendManualText() {
+            initAudioContext();
+            const input = document.getElementById('manual-msg');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = "";
+            handlePilotMessage(text);
+        }
+
+        // ==========================================
+        // 10. DIALOG ATC NATURAL, LINTAS NEGARA FIR & SINKRONISASI STASIUN
+        // ==========================================
+        function handlePilotMessage(pilotText, isDeliveryInit = false, isCoPilot = false) {
+            const labelCs = isCoPilot ? `${getCallsignLabel()} (CO-PILOT)` : getCallsignLabel();
+            const spokenCs = getSpokenCallsign();
+            appendLog('pilot', labelCs, pilotText);
+
+            const msg = pilotText.toLowerCase().replace(/[.,!?]/g, '').trim();
+            const isGroundStart = (currentAlt <= 1500 && (flightPhase === "PREFLIGHT" || flightPhase === "TAXI_OUT"));
+            const contextAp = isGroundStart ? originAirport : activeAirportObj;
+            const assign = getAssignedRunwayAndGate(contextAp);
+            const destAssign = getAssignedRunwayAndGate(destAirport);
+
+            let replyStationHeader = `${activeStationName} (${activeFreq})`;
+            let replyCc = contextAp.cc;
+            let reply = "";
+            let isEmgReply = false;
+            let isBorderReply = false;
+
+            const emptyFillers = ["okay", "ok", "yes", "yeah", "uh", "um", "hmm", "thanks", "thank you", "okay thanks"];
+            if (emptyFillers.includes(msg) && coPilotState.mode !== "READBACK") {
+                return;
+            }
+
+            // 1. PENANGANAN READBACK WAJIB
+            if (coPilotState.mode === "READBACK" && !isDeliveryInit && (
+                msg.includes("contact") || msg.includes("heading") || msg.includes("flight level") ||
+                msg.includes("descending") || msg.includes("climbing") || msg.includes("cleared") ||
+                msg.includes("squawk") || msg.includes("taxi") || msg.includes("enter") ||
+                msg.includes("roger") || msg.includes("wilco") || msg.includes("copy")
+            )) {
+                const rbStation = lastInstructorStation || activeStationName;
+                const rbFreq = lastInstructorFreq || activeFreq;
+                replyCc = lastInstructorCc || contextAp.cc;
+                replyStationHeader = `${rbStation} (${rbFreq})`;
+
+                reply = `${spokenCs}, ${rbStation}, readback is correct, thank you.`;
+                if (msg.includes("contact") && pendingHandoffStation) {
+                    reply += ` ${pendingHandoffStation} is expecting you on ${pendingHandoffFreq}.`;
+                }
+
+                setTimeout(() => {
+                    appendLog('atc', replyStationHeader, reply);
+                    speakSingleCountryController(replyCc, reply);
+
+                    if (pendingBorderFir) {
+                        setSmartCoPilotAction(
+                            "BORDER_ENTRY",
+                            `🛂 FIR BORDER: Request ${pendingBorderFir.countryName} airspace entry clearance`,
+                            "🛂 REQUEST FIR ENTRY",
+                            `${pendingBorderFir.firName}, ${spokenCs}, Flight Level ${Math.round(currentAlt/100)}, requesting clearance to enter ${pendingBorderFir.countryName} airspace.`
+                        );
+                    } else if (pendingHandoffStation) {
+                        const fl = currentAlt >= 10000 ? `Flight Level ${Math.round(currentAlt/100)}` : `${Math.round(currentAlt)} feet`;
+                        setSmartCoPilotAction(
+                            "NEXT_ACTION",
+                            `💡 NEXT STEP: Check-In with ${pendingHandoffStation} (${pendingHandoffFreq})`,
+                            "🎙️ CHECK-IN ATC",
+                            `${pendingHandoffStation}, ${spokenCs}, with you at ${fl}.`
+                        );
+                    } else {
+                        suggestNextCoPilotStep();
+                    }
+                }, 250);
+                return;
+            }
+
+            // 2. PERMINTAAN IZIN MASUK WILAYAH NEGARA (FIR BORDER ENTRY CLEARANCE)
+            if (msg.includes("enter") || msg.includes("airspace") || msg.includes("border") || msg.includes("overflight") || (pendingBorderFir && msg.includes("requesting clearance"))) {
+                const targetFir = pendingBorderFir || {
+                    firName: activeStationName,
+                    freq: activeFreq,
+                    cc: contextAp.cc,
+                    countryName: contextAp.countryName
+                };
+                const newSqk = generateSquawkCode();
+                activeSquawk = newSqk;
+                pendingBorderFir = null;
+                pendingHandoffStation = "";
+                isBorderReply = true;
+
+                lastInstructorStation = targetFir.firName;
+                lastInstructorFreq = targetFir.freq;
+                lastInstructorCc = targetFir.cc;
+                replyStationHeader = `${targetFir.firName} (${targetFir.freq})`;
+                replyCc = targetFir.cc;
+
+                const fl = currentAlt >= 10000 ? `Flight Level ${Math.round(currentAlt/100)}` : `${Math.round(currentAlt)} feet`;
+                const localHello = getLocalGreeting(targetFir.cc, "hello");
+                reply = `${localHello}, ${spokenCs}, ${targetFir.firName}, radar contact. Welcome to ${targetFir.countryName} airspace. You are cleared to enter ${targetFir.firName} via flight planned route, maintain ${fl}, squawk ${newSqk}.`;
+
+                setSmartCoPilotAction(
+                    "READBACK",
+                    `⚠️ READBACK REQUIRED: "Cleared enter ${targetFir.countryName} airspace, maintain ${fl}, squawk ${newSqk}, ${spokenCs}."`,
+                    "🎙️ CO-PILOT READBACK",
+                    `Cleared to enter ${targetFir.countryName} airspace, maintain ${fl}, squawk ${newSqk}, ${spokenCs}.`
+                );
+            }
+            // 3. CANCEL EMERGENCY
+            else if (msg.includes("cancel mayday") || msg.includes("emergency resolved") || msg.includes("operations normal")) {
+                isEmergency = false;
+                activeSquawk = "4215";
+                updateEmergencyButtonUI();
+                reply = `${spokenCs}, ${activeStationName}, glad to hear everything is under control. Emergency cancelled, squawk 4215 confirmed, resume normal navigation to ${destAirport.name}.`;
+                suggestNextCoPilotStep();
+            }
+            // 4. MAYDAY / EMERGENCY 7700
+            else if (msg.includes("mayday") || msg.includes("pan pan") || msg.includes("emergency") || msg.includes("7700")) {
+                isEmergency = true;
+                isEmgReply = true;
+                activeSquawk = "7700";
+                updateEmergencyButtonUI();
+                const nearest = findNearestAirport(currentLat, currentLon).airport;
+                const emgAssign = getAssignedRunwayAndGate(nearest);
+
+                lastInstructorStation = activeStationName;
+                lastInstructorFreq = activeFreq;
+                lastInstructorCc = contextAp.cc;
+
+                reply = `${spokenCs}, ${activeStationName}, roger MAYDAY, we have you on squawk 7700. Fire and rescue teams are standing by at ${nearest.name}. Turn direct ${nearest.name}, descend at your discretion, you are cleared priority ILS approach Runway ${emgAssign.rwy}.`;
+                setSmartCoPilotAction(
+                    "READBACK",
+                    `⚠️ READBACK REQUIRED: "Direct ${nearest.code}, cleared priority ILS Runway ${emgAssign.rwy}, ${spokenCs}."`,
+                    "🎙️ CO-PILOT READBACK",
+                    `Direct ${nearest.code}, cleared priority ILS Runway ${emgAssign.rwy}, ${spokenCs}.`
+                );
+            }
+            // 5. IFR CLEARANCE
+            else if (msg.includes("ifr") || msg.includes("clearance")) {
+                activeSquawk = "4215";
+                if (isGroundStart) {
+                    groundSubStep = "PUSHBACK";
+                    activeStationName = `${contextAp.name} Delivery`;
+                    activeFreq = contextAp.delFreq;
+                    lastInstructorStation = activeStationName;
+                    lastInstructorFreq = activeFreq;
+                    lastInstructorCc = contextAp.cc;
+                    replyStationHeader = `${activeStationName} (${activeFreq})`;
+
+                    reply = `Good day ${spokenCs}, ${contextAp.name} Delivery, welcome aboard. We have your flight plan ready. You are cleared to ${destAirport.name} via flight planned route, initial climb 5,000 feet, departure frequency ${contextAp.appFreq}, squawk 4215. Give Ground a call on ${contextAp.gndFreq} whenever you're ready for pushback.`;
+                    setSmartCoPilotAction(
+                        "READBACK",
+                        `⚠️ READBACK REQUIRED: "Cleared to ${destAirport.code}, initial 5,000 feet, squawk 4215, ${spokenCs}."`,
+                        "🎙️ CO-PILOT READBACK",
+                        `Cleared to ${destAirport.code}, initial 5,000 feet, departure ${contextAp.appFreq}, squawk 4215, ${spokenCs}.`
+                    );
+                } else {
+                    lastInstructorStation = activeStationName;
+                    lastInstructorFreq = activeFreq;
+                    lastInstructorCc = contextAp.cc;
+                    const fl = currentAlt >= 10000 ? `Flight Level ${Math.round(currentAlt/100)}` : `${Math.round(currentAlt)} feet`;
+                    reply = `Good day ${spokenCs}, ${activeStationName}, good to have you with us. Airborne IFR clearance confirmed to ${destAirport.name}, maintain ${fl}, squawk 4215, proceed direct ${destAirport.name}.`;
+                    setSmartCoPilotAction(
+                        "READBACK",
+                        `⚠️ READBACK REQUIRED: "Cleared direct ${destAirport.code}, maintaining ${fl}, squawk 4215, ${spokenCs}."`,
+                        "🎙️ CO-PILOT READBACK",
+                        `Cleared direct ${destAirport.code}, maintaining ${fl}, squawk 4215, ${spokenCs}.`
+                    );
+                }
+            }
+            // 6. CHECKING IN / WITH YOU
+            else if (msg.includes("checking in") || msg.includes("with you") || (msg.includes("level") && !msg.includes("descend") && !msg.includes("climb"))) {
+                pendingHandoffStation = "";
+                const distNM = Math.round(getDistanceNM(currentLat, currentLon, activeAirportObj.lat, activeAirportObj.lon));
+                if (distNM > 250) {
+                    reply = `Good day ${spokenCs}, ${activeStationName} via CPDLC data-link. Position report received, ${distNM} miles from ${activeAirportObj.name}. Maintain your current flight level and report 200 miles out.`;
+                } else {
+                    reply = `Good day ${spokenCs}, ${activeStationName}, radar contact, ${distNM} miles from ${activeAirportObj.name}. Local QNH 1013, proceed on course to ${destAirport.name}.`;
+                }
+                suggestNextCoPilotStep();
+            }
+            // 7. PUSHBACK & ENGINE START
+            else if (msg.includes("push") || msg.includes("startup") || msg.includes("start")) {
+                flightPhase = "TAXI_OUT";
+                groundSubStep = "TAXI";
+                activeStationName = `${contextAp.name} Ground`;
+                activeFreq = contextAp.gndFreq;
+                lastInstructorStation = activeStationName;
+                lastInstructorFreq = activeFreq;
+                lastInstructorCc = contextAp.cc;
+                replyStationHeader = `${activeStationName} (${activeFreq})`;
+
+                reply = `${spokenCs}, ${contextAp.name} Ground. Pushback and engine start approved from ${assign.gate}, facing east, QNH 1013. Let us know when you're ready to taxi.`;
+                suggestNextCoPilotStep();
+            }
+            // 8. TAXI (OUT / IN)
+            else if (msg.includes("taxi") || msg.includes("park") || msg.includes("gate")) {
+                activeStationName = `${contextAp.name} Ground`;
+                activeFreq = contextAp.gndFreq;
+                lastInstructorStation = activeStationName;
+                lastInstructorFreq = activeFreq;
+                lastInstructorCc = contextAp.cc;
+                replyStationHeader = `${activeStationName} (${activeFreq})`;
+
+                if (flightPhase === "LANDED_TAXI_IN" || flightPhase === "PARKED_COMPLETE" || msg.includes("park") || msg.includes("gate")) {
+                    flightPhase = "PARKED_COMPLETE";
+                    groundSubStep = "PARKED";
+                    const localWelcome = getLocalGreeting(contextAp.cc, "hello");
+                    reply = `${localWelcome}, ${spokenCs}, warm welcome to ${contextAp.name}. Taxi to ${assign.gate} via ${contextAp.taxi}, marshalling crew is waiting for you. Have a wonderful stay!`;
+                    hideSmartCoPilotBar(true);
+                    setTimeout(() => showPostFlightSummaryCard(), 900);
+                } else {
+                    flightPhase = "TAXI_OUT";
+                    groundSubStep = "TOWER_READY";
+                    reply = `${spokenCs}, ${contextAp.name} Ground. Taxi to holding point Runway ${assign.rwy} via ${contextAp.taxi}, and hold short of Runway ${assign.rwy}.`;
+                    setSmartCoPilotAction(
+                        "READBACK",
+                        `⚠️ READBACK REQUIRED: "Taxi holding point Runway ${assign.rwy} via ${contextAp.taxi}, ${spokenCs}."`,
+                        "🎙️ CO-PILOT READBACK",
+                        `Taxi holding point Runway ${assign.rwy} via ${contextAp.taxi}, hold short Runway ${assign.rwy}, ${spokenCs}.`
+                    );
+                }
+            }
+            // 9. TAKEOFF / DEPARTURE
+            else if (msg.includes("takeoff") || msg.includes("take off") || msg.includes("departure") || msg.includes("ready")) {
+                if (flightPhase === "LANDED_TAXI_IN" || flightPhase === "PARKED_COMPLETE") {
+                    replyStationHeader = `${contextAp.name} Ground (${contextAp.gndFreq})`;
+                    reply = `${spokenCs}, negative, you have already arrived at ${contextAp.name}. Taxi to ${assign.gate} via ${contextAp.taxi}.`;
+                } else {
+                    flightPhase = "CLIMB";
+                    groundSubStep = "AIRBORNE";
+                    activeStationName = `${contextAp.name} Tower`;
+                    activeFreq = contextAp.twrFreq;
+                    lastInstructorStation = activeStationName;
+                    lastInstructorFreq = activeFreq;
+                    lastInstructorCc = contextAp.cc;
+                    replyStationHeader = `${activeStationName} (${activeFreq})`;
+
+                    reply = `${spokenCs}, ${contextAp.name} Tower. Wind 110 degrees at 8 knots, QNH 1013. Runway ${assign.rwy} is clear, cleared for takeoff, fly runway heading and climb to 5,000 feet. Have a pleasant flight!`;
+                    setSmartCoPilotAction(
+                        "READBACK",
+                        `⚠️ READBACK REQUIRED: "Cleared for takeoff Runway ${assign.rwy}, ${spokenCs}."`,
+                        "🎙️ CO-PILOT READBACK",
+                        `Cleared for takeoff Runway ${assign.rwy}, ${spokenCs}.`
+                    );
+                }
+            }
+            // 10. DESCEND
+            else if (msg.includes("descend") || msg.includes("descent") || msg.includes("lower")) {
+                const targetFL = msg.match(/\d{2,3}/) ? msg.match(/\d{2,3}/)[0] : "140";
+                demoCruiseAlt = parseInt(targetFL, 10) * 100;
+                flightPhase = "DESCENT";
+                lastInstructorStation = activeStationName;
+                lastInstructorFreq = activeFreq;
+                lastInstructorCc = contextAp.cc;
+
+                reply = `${spokenCs}, ${activeStationName}. Approved, descend and maintain Flight Level ${targetFL}, expect ILS Runway ${destAssign.rwy} at ${destAirport.name}.`;
+                setSmartCoPilotAction(
+                    "READBACK",
+                    `⚠️ READBACK REQUIRED: "Descending Flight Level ${targetFL}, ${spokenCs}."`,
+                    "🎙️ CO-PILOT READBACK",
+                    `Descending Flight Level ${targetFL}, ${spokenCs}.`
+                );
+            }
+            // 11. CLIMB
+            else if (msg.includes("climb") || msg.includes("higher")) {
+                const targetFL = msg.match(/\d{2,3}/) ? msg.match(/\d{2,3}/)[0] : "350";
+                demoCruiseAlt = parseInt(targetFL, 10) * 100;
+                flightPhase = "CLIMB";
+                lastInstructorStation = activeStationName;
+                lastInstructorFreq = activeFreq;
+                lastInstructorCc = contextAp.cc;
+
+                reply = `${spokenCs}, ${activeStationName}. Approved, climb and maintain Flight Level ${targetFL}, proceed direct ${destAirport.name}.`;
+                setSmartCoPilotAction(
+                    "READBACK",
+                    `⚠️ READBACK REQUIRED: "Climbing Flight Level ${targetFL}, ${spokenCs}."`,
+                    "🎙️ CO-PILOT READBACK",
+                    `Climbing Flight Level ${targetFL}, ${spokenCs}.`
+                );
+            }
+            // 12. HEADING / VECTOR
+            else if (msg.includes("heading") || msg.includes("turn") || msg.includes("vector")) {
+                const hdg = msg.match(/\d{3}/) ? msg.match(/\d{3}/)[0] : "270";
+                lastInstructorStation = activeStationName;
+                lastInstructorFreq = activeFreq;
+                lastInstructorCc = contextAp.cc;
+
+                reply = `${spokenCs}, ${activeStationName}, approved. Turn heading ${hdg} degrees.`;
+                setSmartCoPilotAction(
+                    "READBACK",
+                    `⚠️ READBACK REQUIRED: "Turning heading ${hdg}, ${spokenCs}."`,
+                    "🎙️ CO-PILOT READBACK",
+                    `Turning heading ${hdg}, ${spokenCs}.`
+                );
+            }
+            // 13. SPEED
+            else if (msg.includes("speed") || msg.includes("knots")) {
+                const spd = msg.match(/\d{3}/) ? msg.match(/\d{3}/)[0] : "250";
+                lastInstructorStation = activeStationName;
+                lastInstructorFreq = activeFreq;
+                lastInstructorCc = contextAp.cc;
+
+                reply = `${spokenCs}, ${activeStationName}, maintain speed ${spd} knots.`;
+                setSmartCoPilotAction(
+                    "READBACK",
+                    `⚠️ READBACK REQUIRED: "Maintaining ${spd} knots, ${spokenCs}."`,
+                    "🎙️ CO-PILOT READBACK",
+                    `Maintaining ${spd} knots, ${spokenCs}.`
+                );
+            }
+            // 14. WEATHER
+            else if (msg.includes("weather") || msg.includes("wind") || msg.includes("qnh") || msg.includes("metar")) {
+                reply = `${spokenCs}, latest weather at ${destAirport.name}: wind 090 degrees at 7 knots, visibility more than 10 kilometers, few clouds at 3,200 feet, temperature 28, QNH 1013.`;
+            }
+            // 15. ILS APPROACH / LANDING
+            else if (msg.includes("landing") || msg.includes("approach") || msg.includes("ils")) {
+                if (currentAlt > 15000) {
+                    reply = `${spokenCs}, unable landing clearance while you're still at FL${Math.round(currentAlt/100)}. Request descent to Flight Level 140 first.`;
+                } else {
+                    flightPhase = "APPROACH";
+                    activeStationName = `${destAirport.name} Tower`;
+                    activeFreq = destAirport.twrFreq;
+                    lastInstructorStation = activeStationName;
+                    lastInstructorFreq = activeFreq;
+                    lastInstructorCc = destAirport.cc;
+                    replyStationHeader = `${activeStationName} (${activeFreq})`;
+
+                    reply = `${spokenCs}, ${destAirport.name} Tower. Wind is calm, QNH 1013. Cleared ILS approach and cleared to land Runway ${destAssign.rwy}.`;
+                    setSmartCoPilotAction(
+                        "READBACK",
+                        `⚠️ READBACK REQUIRED: "Cleared to land Runway ${destAssign.rwy}, ${spokenCs}."`,
+                        "🎙️ CO-PILOT READBACK",
+                        `Cleared to land Runway ${destAssign.rwy}, ${spokenCs}.`
+                    );
+                }
+            }
+            // 16. THANK YOU / SHUTDOWN
+            else if (msg.includes("thank") || msg.includes("bye") || msg.includes("shutdown")) {
+                if (flightPhase === "LANDED_TAXI_IN" || flightPhase === "PARKED_COMPLETE") {
+                    flightPhase = "PARKED_COMPLETE";
+                    replyStationHeader = `${contextAp.name} Ground (${contextAp.gndFreq})`;
+                    reply = `${spokenCs}, ${contextAp.name} Ground. Your flight plan is closed, pleasure working with you today. Enjoy your time in ${contextAp.name}!`;
+                    hideSmartCoPilotBar(true);
+                } else {
+                    reply = `${spokenCs}, ${activeStationName}, you're very welcome! Continue maintaining ${currentAlt >= 10000 ? 'FL' + Math.round(currentAlt/100) : currentAlt + ' feet'}, we have you on radar enroute to ${destAirport.name}.`;
+                }
+            }
+            // 17. ROGER / WILCO / COPY
+            else if (msg === "copy" || msg === "roger" || msg === "wilco") {
+                reply = `${spokenCs}, ${activeStationName}, roger.`;
+                suggestNextCoPilotStep();
+            }
+            // 18. RADIO CHECK OR REALISTIC ICAO "SAY AGAIN" FALLBACK
+            else if (msg.includes("radio check") || msg.includes("how do you read")) {
+                reply = `${spokenCs}, ${activeStationName}, reading you loud and clear, five by five.`;
+            }
+            else {
+                reply = `${spokenCs}, ${activeStationName}, say again, unreadable transmission.`;
+            }
+
+            setTimeout(() => {
+                appendLog('atc', replyStationHeader, reply, isEmgReply, isBorderReply);
+                speakSingleCountryController(replyCc, reply);
+            }, 300);
+        }
+
+        function appendLog(sender, title, message, isEmergencyMsg = false, isBorderMsg = false) {
+            const logBox = document.getElementById('radio-log');
+            const div = document.createElement('div');
+            if (sender === 'atc') {
+                div.className = isEmergencyMsg ? 'msg-atc emergency' : (isBorderMsg ? 'msg-atc border-alert' : 'msg-atc');
+            } else {
+                div.className = 'msg-pilot';
+            }
+            div.innerHTML = `<strong>[${title}]:</strong> ${message}`;
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        // ==========================================
+        // 11. SIMULASI RUTE GREAT CIRCLE 3D + KECEPATAN PLAY (0.5x s/d 20x)
+        // ==========================================
+        let demoInterval = null;
+        let demoProgress = 0;
+        let demoSpeedMultiplier = 1;
+        let isDemoMode = false;
+        let demoCruiseAlt = 35000;
+        let demoSimAlt = 0;
+
+        function calculateBearing(lat1, lon1, lat2, lon2) {
+            const toRad = Math.PI / 180;
+            const phi1 = lat1 * toRad, phi2 = lat2 * toRad;
+            const dLon = (lon2 - lon1) * toRad;
+            const y = Math.sin(dLon) * Math.cos(phi2);
+            const x = Math.cos(phi1) * Math.sin(phi2) -
+                      Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLon);
+            return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+        }
+
+        function setDemoSpeed(mult) {
+            demoSpeedMultiplier = mult;
+            const mapIds = { 0.5: 'spd-05', 1: 'spd-1', 2: 'spd-2', 5: 'spd-5', 10: 'spd-10', 20: 'spd-20' };
+            Object.entries(mapIds).forEach(([val, id]) => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('active', Number(val) === mult);
+            });
+        }
+
+        function stopDemoFlightUI() {
+            if (demoInterval) {
+                clearInterval(demoInterval);
+                demoInterval = null;
+            }
+            isDemoMode = false;
+            document.getElementById('btn-sim').innerText = "🛫 TEST RUTE";
+            document.getElementById('demo-speed-bar').classList.remove('show');
+        }
+
+        function toggleDemoFlight() {
+            const btn = document.getElementById('btn-sim');
+            if (demoInterval) {
+                stopDemoFlightUI();
+                return;
+            }
+
+            const testOrigin = parseAirportFromInput(document.getElementById('fp-origin').value, worldAirports[0]);
+            const testDest = parseAirportFromInput(document.getElementById('fp-dest').value, worldAirports[5]);
+
+            if (testOrigin.code === testDest.code) {
+                alert("Pilih bandara asal (ORIGIN) dan tujuan (DESTINATION) yang berbeda terlebih dahulu!");
+                return;
+            }
+
+            initAudioContext();
+            isDemoMode = true;
+            currentAlt = 0;
+            activateFlightPlan(true);
+            autoFollowPlane = true;
+            demoProgress = 0;
+            demoCruiseAlt = 35000;
+            demoSimAlt = 500;
+            setDemoSpeed(1);
+            btn.innerText = "⏹️ STOP TEST";
+            document.getElementById('demo-speed-bar').classList.add('show');
+
+            const initBearing = calculateBearing(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon);
+            updateAircraftPosition(originAirport.lat, originAirport.lon, initBearing, 500, 160);
+
+            demoInterval = setInterval(() => {
+                demoProgress += (0.0002 * demoSpeedMultiplier);
+                if (demoProgress >= 1) {
+                    demoSimAlt = 0;
+                    const finalBearing = calculateBearing(currentLat, currentLon, destAirport.lat, destAirport.lon);
+                    updateAircraftPosition(destAirport.lat, destAirport.lon, finalBearing, 0, 12);
+                    stopDemoFlightUI();
+                } else {
+                    const gcPos = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, demoProgress);
+                    const nextPos = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, Math.min(1, demoProgress + 0.005));
+                    const dynamicHdg = calculateBearing(gcPos.lat, gcPos.lon, nextPos.lat, nextPos.lon);
+
+                    const targetAlt = demoProgress < 0.15
+                        ? Math.round((demoProgress / 0.15) * demoCruiseAlt)
+                        : (demoProgress > 0.85
+                            ? Math.max(150, Math.round(((1 - demoProgress) / 0.15) * demoCruiseAlt))
+                            : demoCruiseAlt);
+
+                    const altDiff = targetAlt - demoSimAlt;
+                    const maxStep = Math.max(250, 450 * demoSpeedMultiplier);
+                    if (Math.abs(altDiff) <= maxStep) {
+                        demoSimAlt = targetAlt;
+                    } else {
+                        demoSimAlt += Math.sign(altDiff) * maxStep;
+                    }
+
+                    const simSpd = demoSimAlt > 10000 ? 465 : (demoSimAlt > 2500 ? 240 : 175);
+                    updateAircraftPosition(gcPos.lat, gcPos.lon, dynamicHdg, Math.round(demoSimAlt), simSpd);
+                }
+            }, 600);
+        }
+
+        // ==========================================
+        // 12. KONEKSI WEBSOCKET AEROFLY FS 4 + AUTO-RECONNECT
+        // ==========================================
+        let aeroflySocket = null;
+        let reconnectTimer = null;
+
+        function connectAeroflyBridge(manualTrigger = false) {
+            const statusEl = document.getElementById('conn-status');
+            if (aeroflySocket && (aeroflySocket.readyState === WebSocket.OPEN || aeroflySocket.readyState === WebSocket.CONNECTING)) {
+                return;
+            }
+
+            if (manualTrigger) {
+                statusEl.innerText = "CONNECTING...";
+                statusEl.style.borderColor = "#facc15";
+                statusEl.style.color = "#facc15";
+            }
+
+            try {
+                aeroflySocket = new WebSocket('ws://localhost:8765');
+                aeroflySocket.onopen = () => {
+                    statusEl.innerText = "CONNECTED TO AEROFLY FS 4";
+                    statusEl.style.borderColor = "#38bdf8";
+                    statusEl.style.color = "#38bdf8";
+                };
+                aeroflySocket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.action === "toggle_ptt") { toggleVoiceInput(); return; }
+                    if (data.action === "center_map") { centerOnPlane(); return; }
+                    if (!isDemoMode && data.lat && data.lon) {
+                        updateAircraftPosition(data.lat, data.lon, data.heading || 0, data.altitude || 0, data.speed || 0);
+                    }
+                };
+                aeroflySocket.onclose = () => {
+                    statusEl.innerText = "3D ATM READY";
+                    statusEl.style.borderColor = "#10b981";
+                    statusEl.style.color = "#10b981";
+                    aeroflySocket = null;
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = setTimeout(() => connectAeroflyBridge(false), 4000);
+                };
+                aeroflySocket.onerror = () => {
+                    try { aeroflySocket.close(); } catch (e) {}
+                };
+            } catch (e) {}
+        }
+
+
+        // ==========================================
+        // 13. PROSEDUR STEP CLIMB (LONG-HAUL RVSM +2,000 FT)
+        // ==========================================
+        function requestStepClimb() {
+            initAudioContext();
+            const spokenCs = getSpokenCallsign();
+            if (currentAlt < 24000) {
+                const reply = `${spokenCs}, ${activeStationName}, step climb procedure is only available once established at high-altitude cruise above Flight Level 240.`;
+                appendLog('atc', `${activeStationName} (${activeFreq})`, reply);
+                speakSingleCountryController(activeAirportObj ? activeAirportObj.cc : originAirport.cc, reply);
+                return;
+            }
+            const currentFL = Math.round(currentAlt / 100);
+            const nextFL = Math.min(430, currentFL + 20);
+            if (currentFL >= 430) {
+                const reply = `${spokenCs}, ${activeStationName}, you are already at maximum certified Flight Level 430.`;
+                appendLog('atc', `${activeStationName} (${activeFreq})`, reply);
+                speakSingleCountryController(activeAirportObj ? activeAirportObj.cc : originAirport.cc, reply);
+                return;
+            }
+            const reqMsg = `${activeStationName}, ${spokenCs}, maintaining Flight Level ${currentFL}, lighter weight now, request step climb to Flight Level ${nextFL}.`;
+            handlePilotMessage(reqMsg, false, true);
+        }
+
+
+        connectAeroflyBridge(false);
+    </script>
+</body>
+</html>
