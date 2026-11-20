@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Globe ATM // Pure Natural ICAO ATC V6.9 Fix</title>
+    <title>3D Globe ATM // Pure Natural ICAO ATC V7.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link id="maplibre-css" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"
@@ -67,7 +67,7 @@
             flex-wrap: wrap;
         }
 
-        .clock-box, .voice-badge, .status-badge, .vhf-toggle-btn {
+        .clock-box, .voice-badge, .status-badge, .vhf-toggle-btn, .lang-toggle-btn {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.71rem;
             font-weight: 700;
@@ -76,6 +76,16 @@
             background: var(--bg-dark);
             border: 1px solid var(--border-color);
             white-space: nowrap;
+        }
+
+        .lang-toggle-btn {
+            cursor: pointer;
+            border-color: var(--accent-yellow);
+            color: var(--accent-yellow);
+            transition: 0.2s;
+        }
+        .lang-toggle-btn:hover {
+            background: rgba(250, 204, 21, 0.16);
         }
 
         .vhf-toggle-btn {
@@ -579,8 +589,9 @@
 <body>
 
     <header>
-        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V6.9 FIX</div>
+        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V7.0</div>
         <div class="header-controls">
+            <button class="lang-toggle-btn" id="btn-lang-toggle" onclick="toggleAppLanguage()" title="Switch UI & ATC Voice Language (EN / ID) — ICAO codes protected">🌐 LANG: EN</button>
             <div class="clock-box" id="dynamic-clock" title="Aviation Zulu (UTC) & Local Time // UTC Offset">🕒 00:00:00Z // LOC WADD 00:00</div>
             <button class="vhf-toggle-btn" id="btn-vhf-fx" onclick="toggleVhfEffects()" title="Efek klik & squelch radio VHF kokpit">🔊 VHF FX: ON</button>
             <div class="mic-pill" id="mic-status-pill" onclick="primeMicrophoneSession(true)" title="Klik untuk mengunci izin mikrofon selama sesi berlangsung">🎤 MIC: STANDBY</div>
@@ -678,12 +689,11 @@
             </div>
 
             <div class="radio-log" id="radio-log">
-                <div class="msg-atc">
-                    <span class="msg-sys-title">🌍 [SISTEM ATC V6.9 FIX — DIRECT PLAY, ANTI-SPAM &amp; AUDIO QUEUE]</span>
-                    • <strong>Main Langsung Tanpa Bridge (Online Mode):</strong> Bisa langsung dipakai terbang tanpa menyalakan <em>bridge</em> dulu (<em>bridge</em> bersifat opsional / <em>opt-in</em>). Memerlukan koneksi <em>online</em> untuk peta 3D &amp; layanan web.<br>
-                    • <strong>Anti-Spam Off-Course (26° / 3m / 8°):</strong> Toleransi arah 26°, jeda proaktif diperpanjang, <em>cooldown</em> 3 menit &amp; perubahan <em>heading</em> minimal 8° saat belok / <em>great-circle track</em>.<br>
-                    • <strong>Antrean &amp; Prioritas Suara (FIFO + PTT Lock):</strong> Suara Co-Pilot &amp; ATC berurutan lewat <code>speechQueue</code> dengan jeda antar transmisi, serta ditahan saat PTT aktif (<code>isListening</code> / <code>isStartingMic</code>).<br>
-                    • <strong>Kejelasan Waktu Lokal (LOC):</strong> Jam lokal menampilkan label zona aktif (<code>LOC WADD</code>, <code>LOC WAAF</code>, <code>LOC WSJC</code>, dll.) &amp; offset UTC pada <em>tooltip</em>.
+                <div class="msg-atc" id="welcome-sys-msg">
+                    <span class="msg-sys-title">🌍 [ATC SYSTEM V7.0 — BILINGUAL EN/ID, EXPANDED ICAO CALLSIGNS &amp; PROTECTED CODES]</span>
+                    • <strong>Language Switch (EN / ID):</strong> Click <code>🌐 LANG: EN / ID</code> in the top bar to switch UI and ATC narration between English (ICAO) and Indonesian while protecting aviation codes (<code>ILS</code>, <code>RNAV</code>, <code>VOR</code>, <code>IFR</code>, <code>QNH</code>, <code>FL</code>, <code>SQUAWK</code>, <code>RUNWAY</code>, <code>ICAO</code>).<br>
+                    • <strong>Expanded Airline Telephony:</strong> Supports 120+ airline ICAO callsigns (<code>UAE</code> → Emirates, <code>GIA</code> → Garuda, <code>SIA</code> → Singapore, <code>ETD</code> → Etihad, <code>QTR</code> → Qatari, <code>BAW</code> → Speedbird, <code>DLH</code> → Lufthansa, <code>LNI</code> → Lion Inter, <code>BTK</code> → Batik, etc.).<br>
+                    • <strong>Direct Play &amp; Bridge Mode:</strong> Fly immediately without starting <code>bridge.py</code> first (<em>opt-in</em> bridge), with V6.9 Fix anti-spam off-course (26° / 3m / 8°) and FIFO speech queue intact.
                 </div>
             </div>
 
@@ -1558,20 +1568,52 @@
         // 6. KONVERSI TEKS RADIO VHF ALAMI (ANTI-ROBOT!)
         // ==========================================
         const airlineTelephonyMap = {
-            "SIA": "Singapore", "GIA": "Indonesia", "UAE": "Emirates", "QTR": "Qatari",
-            "SVA": "Saudia", "EYD": "Etihad", "ETD": "Etihad", "FDB": "Sky Dubai",
-            "GFA": "Gulf Air", "KAC": "Kuwaiti", "RJA": "Jordanian", "MSR": "Egyptair",
-            "BAW": "Speedbird", "AFR": "Airfrans", "DLH": "Lufthansa", "KLM": "KLM",
-            "JAL": "Japan Air", "ANA": "All Nippon", "KAL": "Korean Air", "AAR": "Asiana",
-            "CPA": "Cathay", "MAS": "Malaysian", "THA": "Thai", "HVN": "Vietnam Airlines",
-            "PAL": "Philippine", "CEB": "Cebu Air", "BTK": "Batik", "CTV": "Supergreen",
-            "LNI": "Lion Inter", "AWQ": "Wagon Air", "AXM": "Asian Express", "SCO": "Scooter",
-            "CSN": "China Southern", "CES": "China Eastern", "CCA": "Air China", "CAL": "Dynasty",
-            "EVA": "Eva", "AIC": "Air India", "IGO": "Ifly", "THY": "Turkish",
-            "ITY": "Itarrow", "RYR": "Ryanair", "EZY": "Easy", "SWR": "Swiss",
-            "IBE": "Iberia", "SAS": "Scandinavian", "QFA": "Qantas", "VOZ": "Velocity",
-            "ANZ": "New Zealand", "UAL": "United", "AAL": "American", "DAL": "Delta",
-            "ACA": "Air Canada", "GLO": "Gol Transporte", "TAM": "Tam"
+            // Indonesia & Southeast Asia
+            "GIA": "Garuda", "CTV": "Citilink", "LNI": "Lion Inter", "BTK": "Batik",
+            "AWQ": "Wagon Air", "SJY": "Sriwijaya", "NAM": "Nam Air", "PAS": "Mandala",
+            "WON": "Wings Abadi", "SIA": "Singapore", "SLK": "Silkair", "SCO": "Scooter",
+            "MAS": "Malaysian", "AXM": "Asian Express", "XAX": "Xanadu", "MXD": "Malindo",
+            "THA": "Thai", "AIQ": "Thai Asia", "BKP": "Bangkok Air", "NOK": "Nok Air",
+            "HVN": "Vietnam Airlines", "VJC": "Vietjetair", "BAV": "Bamboo",
+            "PAL": "Philippine", "CEB": "Cebu Air", "APG": "Airphil", "RBA": "Brunei",
+            // Middle East & Africa
+            "UAE": "Emirates", "ETD": "Etihad", "EYD": "Etihad", "QTR": "Qatari",
+            "SVA": "Saudia", "FDB": "Sky Dubai", "ABY": "Arabia", "GFA": "Gulf Air",
+            "OMA": "Oman Air", "KAC": "Kuwaiti", "RJA": "Jordanian", "MEA": "Cedar Jet",
+            "MSR": "Egyptair", "ETH": "Ethiopian", "RAM": "Royalair Maroc", "SAA": "Springbok",
+            "KQA": "Kenya",
+            // East & South Asia
+            "JAL": "Japan Air", "ANA": "All Nippon", "SKY": "Skymark", "APJ": "Air Peach",
+            "JJP": "Orange Liner", "KAL": "Korean Air", "AAR": "Asiana", "JJA": "Jeju Air",
+            "TWB": "Tway Air", "JNA": "Jin Air", "CPA": "Cathay", "CRK": "Bauhinia",
+            "HKE": "Hongkong Shuttle", "CAL": "Dynasty", "EVA": "Eva", "SJX": "Starwalker",
+            "CCA": "Air China", "CES": "China Eastern", "CSN": "China Southern", "CHH": "Hainan",
+            "CSC": "Sichuan", "CXA": "Xiamen Air", "CSH": "Shanghai Air", "DKH": "Air Juneyao",
+            "AIC": "Air India", "IGO": "Ifly", "VTI": "Vistara", "SEJ": "Spicejet",
+            "ALK": "Srilankan", "PIA": "Pakistan",
+            // Europe
+            "BAW": "Speedbird", "VIR": "Virgin", "EZY": "Easy", "EXS": "Channex",
+            "TOM": "Tomjet", "LOG": "Logan", "AFR": "Airfrans", "TVF": "France Soleil",
+            "DLH": "Lufthansa", "EWG": "Eurowings", "CFG": "Condor", "GWI": "German Wings",
+            "BER": "Air Berlin", "TUI": "Tuijet", "KLM": "KLM", "TRA": "Transavia",
+            "MPH": "Martinair", "SWR": "Swiss", "EDW": "Edelweiss", "AUA": "Austrian",
+            "BEL": "Beeline", "IBE": "Iberia", "VLG": "Vueling", "AEA": "Europa",
+            "TAP": "Air Portugal", "ITY": "Itarrow", "AZA": "Alitalia", "NOZ": "Nor Shuttle",
+            "SAS": "Scandinavian", "FIN": "Finnair", "ICE": "Iceair", "EIN": "Shamrock",
+            "RYR": "Ryanair", "WZZ": "Wizzair", "LOT": "Pollot", "CSA": "CSA Lines",
+            "THY": "Turkish", "PGT": "Sunturk", "SXS": "Sunexpress", "AEE": "Aegean",
+            "AFL": "Aeroflot", "SBI": "Siberian",
+            // North & South America
+            "AAL": "American", "UAL": "United", "DAL": "Delta", "SWA": "Southwest",
+            "JBU": "Jetblue", "ASA": "Alaska", "NKS": "Spirit Wings", "FFT": "Frontier Flight",
+            "HAL": "Hawaiian", "FDX": "Fedex", "UPS": "UPS", "GTI": "Giant",
+            "ACA": "Air Canada", "WJA": "Westjet", "TSC": "Air Transat",
+            "AMX": "Aeromexico", "VOI": "Volaris", "CMP": "Copa", "AVA": "Avianca",
+            "LAN": "Lan Chile", "TAM": "Tam", "AZU": "Azul", "GLO": "Gol Transporte",
+            "ARG": "Argentina",
+            // Australia & Oceania
+            "QFA": "Qantas", "JST": "Jetstar", "VOZ": "Velocity", "RXA": "Rex",
+            "ANZ": "New Zealand", "FJI": "Fiji", "ANG": "Niugini"
         };
 
         const digitWords = { "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "niner" };
@@ -1587,6 +1629,75 @@
                 return `${airlineTelephonyMap[match[1]]} ${spellDigitsVHF(match[2])}`;
             }
             return clean.replace(/\d+/g, m => spellDigitsVHF(m));
+        }
+
+        // Protected aviation & navigation codes (never translated or altered into casual words)
+        const PROTECTED_AVIATION_CODES = [
+            "ILS", "RNAV", "VOR", "NDB", "DME", "TACAN", "GNSS", "GLS", "RNP",
+            "IFR", "VFR", "SVFR", "IMC", "VMC", "QNH", "QFE", "QNE", "ATIS", "METAR", "TAF",
+            "SID", "STAR", "RVSM", "CPDLC", "ACARS", "TCAS", "GPWS", "TOGA", "VHF", "UHF",
+            "FIR", "UIR", "TMA", "CTR", "ATZ", "GND", "TWR", "APP", "ACC", "DEL", "MAYDAY", "PAN PAN"
+        ];
+
+        function localizeAtcMessageForDisplayAndSpeech(rawText, targetLang) {
+            if (targetLang !== 'id') return rawText;
+            let t = rawText;
+
+            // Protect ICAO codes, frequencies, flight levels, runways, and aviation acronyms before localization
+            const protectedTokens = [];
+            const protect = (match) => {
+                const token = `__AVCODE_${protectedTokens.length}__`;
+                protectedTokens.push(match);
+                return token;
+            };
+
+            const rawCs = getSpokenCallsign();
+            if (rawCs) {
+                const escCs = rawCs.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                t = t.replace(new RegExp(`\\b${escCs}\\b`, 'g'), protect);
+            }
+            t = t.replace(/\b[A-Z]{4}\b/g, protect);
+            t = t.replace(/\b(?:FL\s*\d{2,3}|Flight Level\s+\d{2,3}|Runway\s+\d{2}[LRC]?|QNH\s+\d{4}|squawk\s+\d{4}|\d{3}\.\d{1,3}(?:\s*MHz)?|\d{3}\s*degrees|\d{1,2},?\d{3}\s*feet)\b/gi, protect);
+            const codeRegex = new RegExp(`\\b(${PROTECTED_AVIATION_CODES.join('|')})\\b`, 'g');
+            t = t.replace(codeRegex, protect);
+
+            // Natural Indonesian ATC narration while keeping aviation terms intact
+            const phraseReplacements = [
+                [/readback is correct, thank you\./gi, "readback benar, terima kasih."],
+                [/is expecting you on/gi, "menunggu Anda di frekuensi"],
+                [/radar contact\./gi, "kontak radar."],
+                [/Welcome to (.+?) airspace\./gi, "Selamat datang di wilayah udara $1."],
+                [/You are cleared to enter (.+?) via flight planned route, maintain/gi, "Anda diizinkan memasuki $1 sesuai rute flight plan, pertahankan"],
+                [/Approaching (.+?) FIR boundary\. Contact (.+?) on (.+?) for international airspace entry clearance\./gi, "Mendekati batas FIR $1. Hubungi $2 di frekuensi $3 untuk izin masuk wilayah udara internasional."],
+                [/Good job with us, contact (.+?) on (.+?)\./gi, "Terima kasih atas kerja samanya, hubungi $1 di frekuensi $2."],
+                [/Approaching Top of Descent, when ready descend and maintain/gi, "Mendekati Top of Descent, bila siap turun dan pertahankan"],
+                [/expect (.+?) at (.+?)\./gi, "perkirakan $1 di $2."],
+                [/Radar shows you off course, turn heading/gi, "Radar mendeteksi Anda keluar jalur, belok heading"],
+                [/proceed direct/gi, "lanjutkan direct ke"],
+                [/passing Transition Altitude 10,000 feet, set altimeter Standard 1013, landing lights off\./gi, "melewati Transition Altitude 10.000 kaki, atur altimeter Standard 1013, matikan landing lights."],
+                [/passing Transition Level 10,000 feet, set local (.+?), landing lights on\./gi, "melewati Transition Level 10.000 kaki, atur $1 lokal, nyalakan landing lights."],
+                [/welcome aboard\. We have your flight plan ready\. You are cleared to (.+?) via flight planned route, initial climb 5,000 feet, departure frequency (.+?), (.+?)\. Give Ground a call on (.+?) whenever you're ready for pushback\./gi, "selamat datang. Flight plan Anda sudah siap. Diizinkan menuju $1 sesuai rute flight plan, pendakian awal 5.000 kaki, frekuensi departure $2, $3. Hubungi Ground di $4 bila siap pushback."],
+                [/Pushback and engine start approved from (.+?), facing east, (.+?)\. Let us know when you're ready to taxi\./gi, "Pushback dan start engine disetujui dari $1, menghadap timur, $2. Laporkan bila siap taxi."],
+                [/Taxi to holding point (.+?) via (.+?), and hold short of (.+?)\./gi, "Taxi menuju holding point $1 melalui $2, dan hold short sebelum $3."],
+                [/Wind 110 degrees at 8 knots, (.+?)\. (.+?) is clear, cleared for takeoff, fly runway heading and climb to 5,000 feet\. Have a pleasant flight!/gi, "Angin 110 derajat 8 knot, $1. $2 bebas, diizinkan takeoff, ikuti runway heading dan naik ke 5.000 kaki. Selamat terbang!"],
+                [/Approved, descend and maintain/gi, "Disetujui, turun dan pertahankan"],
+                [/Approved, climb and maintain/gi, "Disetujui, naik dan pertahankan"],
+                [/approved\. Turn heading/gi, "disetujui. Belok heading"],
+                [/maintain speed/gi, "pertahankan kecepatan"],
+                [/Wind is calm, (.+?)\. Cleared (.+?) approach and cleared to land (.+?)\./gi, "Angin tenang, $1. Diizinkan pendekatan $2 dan diizinkan mendarat di $3."],
+                [/warm welcome to (.+?)\. Taxi to (.+?) via (.+?), marshalling crew is waiting for you\. Have a wonderful stay!/gi, "selamat datang di $1. Taxi menuju $2 melalui $3, petugas marshalling sudah menunggu. Selamat beristirahat!"],
+                [/reading you loud and clear, five by five\./gi, "suara Anda terdengar sangat jelas, lima per lima."],
+                [/say again, unreadable transmission\./gi, "ulangi transmisi, suara tidak terbaca jelas."],
+                [/roger\./gi, "roger, dimengerti."]
+            ];
+
+            for (const [pattern, repl] of phraseReplacements) {
+                t = t.replace(pattern, repl);
+            }
+
+            // Restore protected aviation codes untouched
+            t = t.replace(/__AVCODE_(\d+)__/g, (_, idx) => protectedTokens[Number(idx)] || '');
+            return t;
         }
 
         function humanizeRadioTextForSpeech(rawText) {
@@ -2533,6 +2644,104 @@
 
         let speechGenerationId = 0;
 
+        let appLang = (function() {
+            try {
+                const saved = localStorage.getItem('ayc_atc_lang');
+                return (saved === 'id' || saved === 'en') ? saved : 'en';
+            } catch (e) {
+                return 'en';
+            }
+        })();
+
+        function getIndonesianVoiceIfAvailable() {
+            if (!('speechSynthesis' in window)) return null;
+            if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
+            const idNeural = availableVoices.filter(v =>
+                v.lang.toLowerCase().startsWith('id') &&
+                (v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('neural') || v.name.toLowerCase().includes('online'))
+            );
+            if (idNeural.length > 0) return idNeural[0];
+            const idAny = availableVoices.filter(v => v.lang.toLowerCase().startsWith('id'));
+            return idAny.length > 0 ? idAny[0] : null;
+        }
+
+        function applyAppLanguageUI() {
+            const langBtn = document.getElementById('btn-lang-toggle');
+            if (langBtn) {
+                langBtn.innerText = appLang === 'en' ? '🌐 LANG: EN' : '🌐 LANG: ID';
+            }
+
+            const btnCenter = document.getElementById('btn-center');
+            if (btnCenter) {
+                btnCenter.innerText = autoFollowPlane
+                    ? (appLang === 'en' ? '🎯 CAMERA LOCKED (C / F9)' : '🎯 KAMERA TERKUNCI (C / F9)')
+                    : (appLang === 'en' ? '🎯 CENTER AIRCRAFT (C / F9)' : '🎯 PUSATKAN PESAWAT (C / F9)');
+            }
+
+            const btnRadar = document.getElementById('btn-radar-ring');
+            if (btnRadar) {
+                btnRadar.innerText = showAirportRadar ? '📡 RADAR: ON' : '📡 RADAR: OFF';
+            }
+
+            const btnFir = document.getElementById('btn-fir-lines');
+            if (btnFir) {
+                btnFir.innerText = showFirBorders
+                    ? (appLang === 'en' ? '🌐 FIR BORDERS: ON' : '🌐 BATAS FIR: ON')
+                    : (appLang === 'en' ? '🌐 FIR BORDERS: OFF' : '🌐 BATAS FIR: OFF');
+            }
+
+            const btnTalk = document.getElementById('btn-talk');
+            if (btnTalk && !isListening) {
+                btnTalk.innerText = appLang === 'en'
+                    ? '🎙️ TALK TO ATC [SPACE / R-CTRL]'
+                    : '🎙️ BICARA KE ATC [SPASI / R-CTRL]';
+            }
+
+            const btnSim = document.getElementById('btn-sim');
+            if (btnSim) {
+                btnSim.innerText = demoInterval
+                    ? (appLang === 'en' ? '⏹️ STOP TEST' : '⏹️ STOP TEST')
+                    : (appLang === 'en' ? '🛫 TEST ROUTE' : '🛫 TEST RUTE');
+            }
+
+            const manualInput = document.getElementById('manual-msg');
+            if (manualInput) {
+                manualInput.placeholder = appLang === 'en'
+                    ? 'Pilot Radio (e.g., Request IFR clearance / Pushback / Taxi / Departure)...'
+                    : 'Pilot Radio (cth: Request IFR clearance / Pushback / Taxi / Departure)...';
+            }
+
+            const sendBtn = document.querySelector('.text-input-row button');
+            if (sendBtn) {
+                sendBtn.innerText = appLang === 'en' ? 'SEND' : 'KIRIM';
+            }
+
+            const welcomeMsg = document.getElementById('welcome-sys-msg');
+            if (welcomeMsg) {
+                if (appLang === 'en') {
+                    welcomeMsg.innerHTML = `
+                        <span class="msg-sys-title">🌍 [ATC SYSTEM V7.0 — BILINGUAL EN/ID, EXPANDED ICAO CALLSIGNS &amp; PROTECTED CODES]</span>
+                        • <strong>Language Switch (EN / ID):</strong> Click <code>🌐 LANG: EN / ID</code> in the top bar to switch UI and ATC narration between English (ICAO) and Indonesian while protecting aviation codes (<code>ILS</code>, <code>RNAV</code>, <code>VOR</code>, <code>IFR</code>, <code>QNH</code>, <code>FL</code>, <code>SQUAWK</code>, <code>RUNWAY</code>, <code>ICAO</code>).<br>
+                        • <strong>Expanded Airline Telephony:</strong> Supports 120+ airline ICAO callsigns (<code>UAE</code> → Emirates, <code>GIA</code> → Garuda, <code>SIA</code> → Singapore, <code>ETD</code> → Etihad, <code>QTR</code> → Qatari, <code>BAW</code> → Speedbird, <code>DLH</code> → Lufthansa, <code>LNI</code> → Lion Inter, <code>BTK</code> → Batik, etc.).<br>
+                        • <strong>Direct Play &amp; Bridge Mode:</strong> Fly immediately without starting <code>bridge.py</code> first (<em>opt-in</em> bridge), with V6.9 Fix anti-spam off-course (26° / 3m / 8°) and FIFO speech queue intact.
+                    `;
+                } else {
+                    welcomeMsg.innerHTML = `
+                        <span class="msg-sys-title">🌍 [SISTEM ATC V7.0 — PILIH BAHASA EN/ID, CALLSIGN ICAO LUAS &amp; KODE TERLINDUNGI]</span>
+                        • <strong>Tombol Pilih Bahasa (EN / ID):</strong> Klik <code>🌐 LANG: EN / ID</code> di bar atas untuk mengganti bahasa UI &amp; narasi ATC tanpa mengubah kode aviasi baku (<code>ILS</code>, <code>RNAV</code>, <code>VOR</code>, <code>IFR</code>, <code>QNH</code>, <code>FL</code>, <code>SQUAWK</code>, <code>RUNWAY</code>, <code>ICAO</code>).<br>
+                        • <strong>Kamus Maskapai Diperluas:</strong> Mendukung 120+ kode ICAO maskapai (<code>UAE</code> → Emirates, <code>GIA</code> → Garuda, <code>SIA</code> → Singapore, <code>ETD</code> → Etihad, <code>QTR</code> → Qatari, <code>BAW</code> → Speedbird, <code>DLH</code> → Lufthansa, <code>LNI</code> → Lion Inter, <code>BTK</code> → Batik, dll.).<br>
+                        • <strong>Direct Play &amp; Bridge Mode:</strong> Tetap bisa langsung terbang tanpa menyalakan <code>bridge.py</code> dulu (<em>opt-in</em>), lengkap dengan anti-spam <em>off-course</em> (26° / 3m / 8°) dan antrean suara FIFO.
+                    `;
+                }
+            }
+        }
+
+        function toggleAppLanguage() {
+            appLang = (appLang === 'en') ? 'id' : 'en';
+            try { localStorage.setItem('ayc_atc_lang', appLang); } catch (e) {}
+            applyAppLanguageUI();
+        }
+
         function speakSingleCountryController(countryCode, icaoEnglishText, stationKey = "") {
             if (!icaoEnglishText || !('speechSynthesis' in window)) return;
             if (isPttActiveOrStarting()) return;
@@ -2540,15 +2749,33 @@
             const myGen = speechGenerationId;
             const effectiveStation = stationKey || activeStationName;
             const profile = getRegionalVoiceProfile(countryCode);
-            const humanizedSpeech = humanizeRadioTextForSpeech(icaoEnglishText);
-            const singleVoice = getSingleVoiceForCountry(countryCode, profile.accentLang, effectiveStation);
+            const localizedText = localizeAtcMessageForDisplayAndSpeech(icaoEnglishText, appLang);
+            const humanizedSpeech = humanizeRadioTextForSpeech(localizedText);
+
+            let chosenVoice = null;
+            let chosenLang = profile.accentLang;
+
+            if (appLang === 'id') {
+                const idVoice = getIndonesianVoiceIfAvailable();
+                if (idVoice) {
+                    chosenVoice = idVoice;
+                    chosenLang = idVoice.lang;
+                } else {
+                    chosenVoice = getSingleVoiceForCountry(countryCode, profile.accentLang, effectiveStation);
+                    chosenLang = chosenVoice ? chosenVoice.lang : 'id-ID';
+                }
+            } else {
+                chosenVoice = getSingleVoiceForCountry(countryCode, profile.accentLang, effectiveStation);
+                chosenLang = chosenVoice ? chosenVoice.lang : profile.accentLang;
+            }
+
             const stationOffset = ((hashStationKey(effectiveStation) % 5) - 2) * 0.025;
 
             enqueueSpeechItem({
                 genId: myGen,
                 text: humanizedSpeech,
-                voice: singleVoice,
-                lang: singleVoice ? singleVoice.lang : profile.accentLang,
+                voice: chosenVoice,
+                lang: chosenLang,
                 rate: profile.rate,
                 pitch: Math.max(0.88, Math.min(1.12, profile.pitch + stationOffset)),
                 playStartClick: true,
@@ -3221,12 +3448,14 @@
         function appendLog(sender, title, message, isEmergencyMsg = false, isBorderMsg = false) {
             const logBox = document.getElementById('radio-log');
             const div = document.createElement('div');
+            let displayMessage = message;
             if (sender === 'atc') {
                 div.className = isEmergencyMsg ? 'msg-atc emergency' : (isBorderMsg ? 'msg-atc border-alert' : 'msg-atc');
+                displayMessage = localizeAtcMessageForDisplayAndSpeech(message, appLang);
             } else {
                 div.className = 'msg-pilot';
             }
-            div.innerHTML = `<strong>[${title}]:</strong> ${message}`;
+            div.innerHTML = `<strong>[${title}]:</strong> ${displayMessage}`;
             logBox.appendChild(div);
             logBox.scrollTop = logBox.scrollHeight;
         }
@@ -3441,6 +3670,9 @@
             const reqMsg = `${activeStationName}, ${spokenCs}, maintaining Flight Level ${currentFL}, lighter weight now, request step climb to Flight Level ${nextFL}.`;
             handlePilotMessage(reqMsg, false, true);
         }
+
+        // Terapkan preferensi bahasa awal (EN / ID) tanpa menyentuh alur bridge & radar
+        applyAppLanguageUI();
 
         // Default langsung siap pakai tanpa menyalakan bridge dulu (bridge opsional saat diklik)
         setBridgeStatusBadge('idle', "NO BRIDGE (DIRECT READY)");
