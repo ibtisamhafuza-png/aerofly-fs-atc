@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Globe ATM // Pure Natural ICAO ATC V6.8</title>
+    <title>3D Globe ATM // Pure Natural ICAO ATC V6.9 Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link id="maplibre-css" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"
@@ -97,6 +97,10 @@
         }
         .status-badge:hover {
             background: rgba(16, 185, 129, 0.15);
+        }
+        .status-badge.bridge-live {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
         }
 
         .ctrl-select, .ctrl-input, .search-ap-input {
@@ -464,7 +468,6 @@
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
-
         .btn-radar-toggle {
             border-color: var(--accent-green);
             color: #6ee7b7;
@@ -549,7 +552,7 @@
             margin-top: 2px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.85);
         }
-    
+
         .mic-pill {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.71rem;
@@ -571,15 +574,14 @@
             border-color: var(--accent-amber);
             color: var(--accent-yellow);
         }
-
     </style>
 </head>
 <body>
 
     <header>
-        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V6.8</div>
+        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V6.9 FIX</div>
         <div class="header-controls">
-            <div class="clock-box" id="dynamic-clock" title="Aviation Zulu (UTC) & Local Time">🕒 00:00:00Z // LOC 00:00</div>
+            <div class="clock-box" id="dynamic-clock" title="Aviation Zulu (UTC) & Local Time // UTC Offset">🕒 00:00:00Z // LOC WADD 00:00</div>
             <button class="vhf-toggle-btn" id="btn-vhf-fx" onclick="toggleVhfEffects()" title="Efek klik & squelch radio VHF kokpit">🔊 VHF FX: ON</button>
             <div class="mic-pill" id="mic-status-pill" onclick="primeMicrophoneSession(true)" title="Klik untuk mengunci izin mikrofon selama sesi berlangsung">🎤 MIC: STANDBY</div>
             <div class="voice-badge" id="voice-engine-badge" title="Gunakan Microsoft Edge untuk suara Neural Manusia Asli terbaik">🎙️ CHECKING VOICE...</div>
@@ -594,7 +596,7 @@
                 <option value="A320">A320 (Airbus A320neo)</option>
             </select>
             <input type="text" id="callsign" class="ctrl-input" value="SIA211" onblur="validateCallsignInput()" title="Callsign + Nomor Penerbangan (cth: SIA211, UAE224, GIA405)">
-            <div class="status-badge" id="conn-status" onclick="connectAeroflyBridge(true)" title="Klik untuk menyambung ulang ke Aerofly FS 4 Bridge">3D ATM READY</div>
+            <div class="status-badge" id="conn-status" onclick="connectAeroflyBridge(true)" title="Opsional: klik untuk menyambung ulang ke Aerofly FS 4 Bridge (tidak wajib dibuka sebelum terbang)">NO BRIDGE (DIRECT READY)</div>
         </div>
     </header>
 
@@ -677,10 +679,11 @@
 
             <div class="radio-log" id="radio-log">
                 <div class="msg-atc">
-                    <span class="msg-sys-title">🌍 [SISTEM ATC V6.8 — CLEAN SOLO FLIGHT &amp; CORE ENGINE FIXES]</span>
-                    • <strong>Fokus Pesawat Tunggal:</strong> Peta bola bumi 3D bersih tanpa pesawat AI pengganggu—hanya pesawatmu yang tampil jelas.<br>
-                    • <strong>Mikrofon Terkunci Sesi (Anti-Prompt Berulang):</strong> Izin mikrofon dikunci aktif selama tab terbuka sehingga tidak meminta izin berulang kali saat menekan PTT.<br>
-                    • <strong>Perbaikan Sinkronisasi Audio &amp; Prosedur:</strong> Anti-tumpang-tindih suara ATC &amp; Co-Pilot, Step Climb presisi, serta transisi rute 100% stabil.
+                    <span class="msg-sys-title">🌍 [SISTEM ATC V6.9 FIX — DIRECT PLAY, ANTI-SPAM &amp; AUDIO QUEUE]</span>
+                    • <strong>Main Langsung Tanpa Bridge (Online Mode):</strong> Bisa langsung dipakai terbang tanpa menyalakan <em>bridge</em> dulu (<em>bridge</em> bersifat opsional / <em>opt-in</em>). Memerlukan koneksi <em>online</em> untuk peta 3D &amp; layanan web.<br>
+                    • <strong>Anti-Spam Off-Course (26° / 3m / 8°):</strong> Toleransi arah 26°, jeda proaktif diperpanjang, <em>cooldown</em> 3 menit &amp; perubahan <em>heading</em> minimal 8° saat belok / <em>great-circle track</em>.<br>
+                    • <strong>Antrean &amp; Prioritas Suara (FIFO + PTT Lock):</strong> Suara Co-Pilot &amp; ATC berurutan lewat <code>speechQueue</code> dengan jeda antar transmisi, serta ditahan saat PTT aktif (<code>isListening</code> / <code>isStartingMic</code>).<br>
+                    • <strong>Kejelasan Waktu Lokal (LOC):</strong> Jam lokal menampilkan label zona aktif (<code>LOC WADD</code>, <code>LOC WAAF</code>, <code>LOC WSJC</code>, dll.) &amp; offset UTC pada <em>tooltip</em>.
                 </div>
             </div>
 
@@ -716,12 +719,138 @@
 
     <script>
         // ==========================================
-        // 0. ENGINE AUDIO VHF RADIO KOKPIT (PTT CLICK & STATIC HISS)
+        // 0. ENGINE AUDIO VHF RADIO KOKPIT (FIFO SPEECH QUEUE + PTT LOCK)
         // ==========================================
         let vhfFxEnabled = true;
         let audioCtx = null;
         let staticNoiseNode = null;
         window._utterancePool = [];
+
+        // FIFO Queue untuk suara ATC & Co-Pilot dengan jeda antar transmisi
+        const speechQueue = [];
+        let isProcessingSpeechQueue = false;
+        let activeQueueTimer = null;
+        const INTER_TRANSMISSION_GAP_MS = 380;
+
+        function isPttActiveOrStarting() {
+            return Boolean(isListening || isStartingMic);
+        }
+
+        function clearSpeechQueueAndTimers() {
+            speechQueue.length = 0;
+            isProcessingSpeechQueue = false;
+            if (activeQueueTimer) {
+                clearTimeout(activeQueueTimer);
+                activeQueueTimer = null;
+            }
+        }
+
+        function enqueueSpeechItem(item) {
+            if (!item || !item.text) return;
+            speechQueue.push(item);
+            processSpeechQueue();
+        }
+
+        function processSpeechQueue() {
+            if (isProcessingSpeechQueue) return;
+            if (isPttActiveOrStarting()) {
+                // Tahan antrean saat PTT aktif atau sedang mulai agar tidak potong/tumpang tindih
+                if (!activeQueueTimer) {
+                    activeQueueTimer = setTimeout(() => {
+                        activeQueueTimer = null;
+                        processSpeechQueue();
+                    }, 220);
+                }
+                return;
+            }
+            if (speechQueue.length === 0) return;
+
+            const nextItem = speechQueue.shift();
+            if (!nextItem) return;
+
+            if (typeof nextItem.genId === 'number' && nextItem.genId !== speechGenerationId) {
+                processSpeechQueue();
+                return;
+            }
+
+            isProcessingSpeechQueue = true;
+
+            const finishItem = (gapMs = INTER_TRANSMISSION_GAP_MS) => {
+                if (activeQueueTimer) {
+                    clearTimeout(activeQueueTimer);
+                    activeQueueTimer = null;
+                }
+                stopTtsKeepAlive();
+                stopVhfStatic();
+                if (nextItem.playEndClick) {
+                    playVhfClick('end');
+                }
+                if (typeof nextItem.onComplete === 'function') {
+                    try { nextItem.onComplete(); } catch (e) {}
+                }
+                activeQueueTimer = setTimeout(() => {
+                    activeQueueTimer = null;
+                    isProcessingSpeechQueue = false;
+                    processSpeechQueue();
+                }, gapMs);
+            };
+
+            if (!('speechSynthesis' in window) || !nextItem.text) {
+                finishItem(180);
+                return;
+            }
+
+            let completed = false;
+            const safeDone = (gapMs = INTER_TRANSMISSION_GAP_MS) => {
+                if (completed) return;
+                completed = true;
+                finishItem(gapMs);
+            };
+
+            const watchdogMs = Math.min(10500, Math.max(2800, nextItem.text.length * 85));
+            activeQueueTimer = setTimeout(() => safeDone(INTER_TRANSMISSION_GAP_MS), watchdogMs);
+
+            const utter = new SpeechSynthesisUtterance(nextItem.text);
+            window._utterancePool.push(utter);
+            if (window._utterancePool.length > 24) {
+                window._utterancePool = window._utterancePool.slice(-12);
+            }
+
+            if (nextItem.voice) {
+                utter.voice = nextItem.voice;
+                utter.lang = nextItem.voice.lang;
+            } else if (nextItem.lang) {
+                utter.lang = nextItem.lang;
+            }
+            if (typeof nextItem.rate === 'number') utter.rate = nextItem.rate;
+            if (typeof nextItem.pitch === 'number') utter.pitch = nextItem.pitch;
+
+            utter.onstart = () => {
+                if (isPttActiveOrStarting()) {
+                    try { window.speechSynthesis.cancel(); } catch (e) {}
+                    safeDone(120);
+                    return;
+                }
+                if (nextItem.playStartClick) {
+                    playVhfClick('start');
+                }
+                startVhfStatic();
+                startTtsKeepAlive();
+            };
+
+            utter.onend = () => safeDone(INTER_TRANSMISSION_GAP_MS);
+            utter.onerror = () => safeDone(INTER_TRANSMISSION_GAP_MS);
+
+            try {
+                if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+            } catch (e) {}
+
+            try {
+                window.speechSynthesis.speak(utter);
+            } catch (e) {
+                safeDone(150);
+            }
+        }
 
         function initAudioContext() {
             if (!audioCtx) {
@@ -846,13 +975,15 @@
                 ttsKeepAliveTimer = null;
             }
         }
-        function cancelAllSpeechSafe() {
+        function cancelAllSpeechSafe(clearQueue = false) {
             stopTtsKeepAlive();
+            if (clearQueue) {
+                clearSpeechQueueAndTimers();
+            }
             if ('speechSynthesis' in window) {
                 try { window.speechSynthesis.cancel(); } catch (e) {}
             }
             stopVhfStatic();
-            window._utterancePool = [];
         }
 
         // ==========================================
@@ -1035,9 +1166,20 @@
         }
 
         // ==========================================
-        // 3. JAM DINAMIS ZULU (UTC) & WAKTU LOKAL BANDARA
+        // 3. JAM DINAMIS ZULU (UTC) & WAKTU LOKAL (LOC) + LABEL & OFFSET
         // ==========================================
         let activeTzOffset = 8;
+        let activeLocRefCode = "WADD";
+
+        function formatUtcOffsetLabel(offsetHours) {
+            const sign = offsetHours >= 0 ? "+" : "-";
+            const absVal = Math.abs(offsetHours);
+            const whole = Math.floor(absVal);
+            const mins = Math.round((absVal - whole) * 60);
+            return mins === 0
+                ? `UTC${sign}${whole}`
+                : `UTC${sign}${whole}:${String(mins).padStart(2, '0')}`;
+        }
 
         function updateDynamicClock() {
             const now = new Date();
@@ -1050,7 +1192,14 @@
             const locH = String(localDate.getUTCHours()).padStart(2, '0');
             const locM = String(localDate.getUTCMinutes()).padStart(2, '0');
 
-            document.getElementById('dynamic-clock').innerText = `🕒 ${utcH}:${utcM}:${utcS}Z // LOC ${locH}:${locM}`;
+            const refCode = activeLocRefCode || (activeAirportObj ? activeAirportObj.code : "WADD");
+            const offsetStr = formatUtcOffsetLabel(activeTzOffset);
+
+            const clockEl = document.getElementById('dynamic-clock');
+            if (clockEl) {
+                clockEl.innerText = `🕒 ${utcH}:${utcM}:${utcS}Z // LOC ${refCode} ${locH}:${locM}`;
+                clockEl.title = `Aviation Zulu (UTC) & Local Time (${refCode} / ${offsetStr})`;
+            }
         }
         setInterval(updateDynamicClock, 1000);
         updateDynamicClock();
@@ -1502,7 +1651,17 @@
             speechText: ""
         };
 
+        // V6.9 Fix: Anti-Spam & Cooldown Koreksi Arah (Off-Course)
+        // Toleransi 26°, interval proaktif diperpanjang, cooldown 3 menit, perubahan heading minimal 8°
+        const OFF_COURSE_TOLERANCE_DEG = 26;
+        const PROACTIVE_MIN_INTERVAL_MS = 150000; // 2.5 menit interval instruksi proaktif
+        const OFF_COURSE_COOLDOWN_MS = 180000;   // 3 menit cooldown koreksi off-course
+        const MIN_HEADING_DELTA_DEG = 8;         // ambang perubahan heading minimal 8°
+
         let lastProactiveInstructionTime = 0;
+        let lastOffCourseCorrectionTime = 0;
+        let lastCorrectedTargetHeading = null;
+
         let isEmergency = false;
         let suppressNextHandoff = false;
         let todAnnounced = false;
@@ -1660,34 +1819,26 @@
             const spokenCs = getSpokenCallsign();
             const pilotQuery = `${activeStationName}, ${spokenCs}, request ILS frequency and final approach course for ${targetAp.name} Runway ${rwy}.`;
 
-            cancelAllSpeechSafe();
-            if (!('speechSynthesis' in window)) {
-                deliverIlsResponseFromAtc(targetAp, rwy, pilotQuery);
-                return;
-            }
+            speechGenerationId++;
+            const myGen = speechGenerationId;
+            cancelAllSpeechSafe(true);
 
-            const utter = new SpeechSynthesisUtterance(humanizeRadioTextForSpeech(pilotQuery));
-            window._utterancePool.push(utter);
             const vCoPilot = getCoPilotVoice();
-            if (vCoPilot) utter.voice = vCoPilot;
-            utter.lang = vCoPilot ? vCoPilot.lang : 'en-US';
-            utter.pitch = 1.04;
-            utter.rate = 0.99;
-
-            let done = false;
-            const onFinished = () => {
-                if (done) return;
-                done = true;
-                playVhfClick('end');
-                setTimeout(() => deliverIlsResponseFromAtc(targetAp, rwy, pilotQuery), 260);
-            };
-            utter.onstart = () => playVhfClick('start');
-            utter.onend = onFinished;
-            utter.onerror = onFinished;
-            try {
-                if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-            } catch (e) {}
-            window.speechSynthesis.speak(utter);
+            enqueueSpeechItem({
+                genId: myGen,
+                text: humanizeRadioTextForSpeech(pilotQuery),
+                voice: vCoPilot,
+                lang: vCoPilot ? vCoPilot.lang : 'en-US',
+                pitch: 1.04,
+                rate: 0.99,
+                playStartClick: true,
+                playEndClick: true,
+                onComplete: () => {
+                    if (myGen === speechGenerationId) {
+                        deliverIlsResponseFromAtc(targetAp, rwy, pilotQuery);
+                    }
+                }
+            });
         }
 
         function deliverIlsResponseFromAtc(targetAp, rwy, pilotQuery) {
@@ -1706,10 +1857,8 @@
                 atcReply = `${spokenCs}, ${activeStationName}. Expect Runway ${ils.rwy} at ${targetAp.name}, ILS frequency ${ils.freq} MHz, final approach course ${ils.course} degrees, intercept glideslope at ${ils.gsAlt}.`;
             }
 
-            setTimeout(() => {
-                appendLog('atc', `📡 ILS BRIEFING — ${replyStationHeader}`, atcReply);
-                speakSingleCountryController(replyCc, atcReply, activeStationName);
-            }, 250);
+            appendLog('atc', `📡 ILS BRIEFING — ${replyStationHeader}`, atcReply);
+            speakSingleCountryController(replyCc, atcReply, activeStationName);
         }
 
         function showDestinationAtisCard() {
@@ -1781,7 +1930,7 @@
             btnEl.disabled = false;
             btnEl.innerText = btnLabel;
 
-            if (!isListening) {
+            if (!isPttActiveOrStarting()) {
                 bar.classList.add('show');
             }
         }
@@ -1886,59 +2035,26 @@
 
             speechGenerationId++;
             const myGen = speechGenerationId;
-            cancelAllSpeechSafe();
-
-            if (!('speechSynthesis' in window)) {
-                handlePilotMessage(msgToSend, false, true);
-                return;
-            }
+            cancelAllSpeechSafe(true);
 
             const spokenText = humanizeRadioTextForSpeech(msgToSend);
-            let isCompleted = false;
-            let safetyWatchdog = null;
+            const vCoPilot = getCoPilotVoice();
 
-            const finishCoPilotSpeech = () => {
-                if (isCompleted) return;
-                isCompleted = true;
-                clearTimeout(safetyWatchdog);
-                stopTtsKeepAlive();
-                stopVhfStatic();
-                playVhfClick('end');
-                setTimeout(() => {
-                    handlePilotMessage(msgToSend, false, true);
-                }, 280);
-            };
-
-            // Watchdog maksimal 9 detik jika TTS browser tidak memicu onend
-            safetyWatchdog = setTimeout(finishCoPilotSpeech, Math.min(9500, Math.max(3000, spokenText.length * 85)));
-
-            setTimeout(() => {
-                if (myGen !== speechGenerationId) {
-                    finishCoPilotSpeech();
-                    return;
+            enqueueSpeechItem({
+                genId: myGen,
+                text: spokenText,
+                voice: vCoPilot,
+                lang: vCoPilot ? vCoPilot.lang : 'en-US',
+                pitch: 1.04,
+                rate: 0.99,
+                playStartClick: true,
+                playEndClick: true,
+                onComplete: () => {
+                    if (myGen === speechGenerationId) {
+                        handlePilotMessage(msgToSend, false, true);
+                    }
                 }
-                const utter = new SpeechSynthesisUtterance(spokenText);
-                window._utterancePool.push(utter);
-
-                const vCoPilot = getCoPilotVoice();
-                if (vCoPilot) utter.voice = vCoPilot;
-                utter.lang = vCoPilot ? vCoPilot.lang : 'en-US';
-                utter.pitch = 1.04;
-                utter.rate = 0.99;
-
-                utter.onstart = () => {
-                    playVhfClick('start');
-                    startVhfStatic();
-                    startTtsKeepAlive();
-                };
-                utter.onend = finishCoPilotSpeech;
-                utter.onerror = finishCoPilotSpeech;
-
-                try {
-                    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-                } catch (e) {}
-                window.speechSynthesis.speak(utter);
-            }, 60);
+            });
         }
 
         function activateFlightPlan(keepDemoRunning = false) {
@@ -1977,6 +2093,8 @@
             pendingHandoffFreq = "";
             pendingBorderFir = null;
             lastProactiveInstructionTime = 0;
+            lastOffCourseCorrectionTime = 0;
+            lastCorrectedTargetHeading = null;
             updateAirportRadarRings();
             updateEmergencyButtonUI();
             hideSmartCoPilotBar(true);
@@ -1992,9 +2110,11 @@
                 lastInstructorFreq = activeFreq;
                 lastInstructorCc = activeAirportObj.cc;
                 activeTzOffset = activeAirportObj.tz;
+                activeLocRefCode = activeAirportObj.code;
                 firSelect.value = activeAirportObj.code;
                 lastSectorKey = `${activeAirportObj.cc}-ACC-${activeStationName}`;
                 groundSubStep = "AIRBORNE";
+                updateDynamicClock();
 
                 const fl = currentAlt >= 10000 ? `FL${Math.round(currentAlt/100)}` : `${Math.round(currentAlt)} feet`;
                 const pilotAirMsg = `${activeStationName}, ${getSpokenCallsign()}, airborne at ${fl}, requesting IFR clearance enroute to ${destAirport.name} (${destAirport.code}).`;
@@ -2009,8 +2129,10 @@
                 lastInstructorFreq = activeFreq;
                 lastInstructorCc = originAirport.cc;
                 activeTzOffset = originAirport.tz;
+                activeLocRefCode = originAirport.code;
                 firSelect.value = originAirport.code;
                 lastSectorKey = `${originAirport.cc}-GND-${originAirport.name} Ground`;
+                updateDynamicClock();
 
                 currentLat = originAirport.lat;
                 currentLon = originAirport.lon;
@@ -2037,7 +2159,9 @@
             lastInstructorFreq = activeFreq;
             lastInstructorCc = targetAp.cc;
             activeTzOffset = targetAp.tz;
+            activeLocRefCode = targetAp.code;
             lastSectorKey = `${targetAp.cc}-ACC-${targetAp.firName}`;
+            updateDynamicClock();
             handlePilotMessage(pilotCheckIn);
         }
 
@@ -2067,6 +2191,10 @@
                 btn.classList.remove('active-emg');
                 btn.innerText = "🚨 7700";
             }
+        }
+
+        function getHeadingDiffDeg(a, b) {
+            return Math.abs((((a - b) + 540) % 360) - 180);
         }
 
         function updateAircraftPosition(lat, lon, heading = 90, alt = 0, speed = 0) {
@@ -2116,6 +2244,8 @@
             const nearest = detectedFir ? findNearestAirport(lat, lon, detectedFir.cc) : findNearestAirport(lat, lon);
             const ap = nearest.airport;
             activeTzOffset = ap.tz;
+            activeLocRefCode = detectedFir ? detectedFir.id : ap.code;
+            updateDynamicClock();
 
             if (!isUserManuallySelectingFir && firSelect.value !== ap.code) {
                 firSelect.value = ap.code;
@@ -2165,7 +2295,7 @@
                     lastTransAlertTime = nowTs;
                     const stdMsg = `${spokenCs}, passing Transition Altitude 10,000 feet, set altimeter Standard 1013, landing lights off.`;
                     appendLog('atc', `🎚️ TRANSITION ALTITUDE (10,000 FT)`, stdMsg);
-                    if (!isListening && (!window.speechSynthesis || !window.speechSynthesis.speaking)) {
+                    if (!isPttActiveOrStarting()) {
                         speakSingleCountryController(ap.cc, stdMsg, activeStationName);
                     }
                 }
@@ -2175,7 +2305,7 @@
                     lastTransAlertTime = nowTs;
                     const qnhMsg = `${spokenCs}, passing Transition Level 10,000 feet, set local QNH 1013, landing lights on.`;
                     appendLog('atc', `🎚️ TRANSITION LEVEL (10,000 FT)`, qnhMsg);
-                    if (!isListening && (!window.speechSynthesis || !window.speechSynthesis.speaking)) {
+                    if (!isPttActiveOrStarting()) {
                         speakSingleCountryController(ap.cc, qnhMsg, activeStationName);
                     }
                 }
@@ -2275,10 +2405,14 @@
                 lastProactiveInstructionTime = Date.now();
             }
 
+            // V6.9 Fix: Anti-Spam & Cooldown Koreksi Arah (Off-Course)
             const now = Date.now();
-            if (alt > 8000 && coPilotState.mode !== "READBACK" && (now - lastProactiveInstructionTime > 90000)) {
+            if (alt > 8000 && coPilotState.mode !== "READBACK" && (now - lastProactiveInstructionTime > PROACTIVE_MIN_INTERVAL_MS)) {
                 const bearingToDest = Math.round(calculateBearing(lat, lon, destAirport.lat, destAirport.lon));
-                const headingDiff = Math.abs(((heading - bearingToDest + 540) % 360) - 180);
+                const headingDiff = getHeadingDiffDeg(heading, bearingToDest);
+                const cooldownElapsed = (now - lastOffCourseCorrectionTime) >= OFF_COURSE_COOLDOWN_MS;
+                const headingChangedEnough = (lastCorrectedTargetHeading === null) ||
+                    (getHeadingDiffDeg(bearingToDest, lastCorrectedTargetHeading) >= MIN_HEADING_DELTA_DEG);
 
                 let atcCmd = "";
                 let rbSample = "";
@@ -2292,13 +2426,20 @@
 
                     atcCmd = `${spokenCs}, ${activeStationName}. Approaching Top of Descent, when ready descend and maintain Flight Level 140, expect ILS Runway ${getAssignedRunwayAndGate(destAirport).rwy} at ${destAirport.name}.`;
                     rbSample = `Descending Flight Level 140, ${spokenCs}.`;
-                } else if (headingDiff > 15 && distToDest > 25) {
+                } else if (
+                    headingDiff > OFF_COURSE_TOLERANCE_DEG &&
+                    distToDest > 25 &&
+                    cooldownElapsed &&
+                    headingChangedEnough
+                ) {
                     lastProactiveInstructionTime = now;
+                    lastOffCourseCorrectionTime = now;
+                    lastCorrectedTargetHeading = bearingToDest;
                     lastInstructorStation = activeStationName;
                     lastInstructorFreq = activeFreq;
                     lastInstructorCc = sectorAirport.cc;
 
-                    atcCmd = `${spokenCs}, ${activeStationName}. Radar shows you slightly off course, turn heading ${String(bearingToDest).padStart(3, '0')} degrees, proceed direct ${destAirport.name}.`;
+                    atcCmd = `${spokenCs}, ${activeStationName}. Radar shows you off course, turn heading ${String(bearingToDest).padStart(3, '0')} degrees, proceed direct ${destAirport.name}.`;
                     rbSample = `Turning heading ${String(bearingToDest).padStart(3, '0')}, direct ${destAirport.code}, ${spokenCs}.`;
                 }
 
@@ -2316,7 +2457,7 @@
         }
 
         // ==========================================
-        // 8. MESIN SUARA 1 NEGARA = 1 SUARA PETUGAS TUNGGAL + VHF AUDIO FX
+        // 8. MESIN SUARA 1 NEGARA = 1 SUARA PETUGAS TUNGGAL + FIFO SPEECH QUEUE
         // ==========================================
         let availableVoices = [];
         const stationVoiceCache = {};
@@ -2393,59 +2534,30 @@
         let speechGenerationId = 0;
 
         function speakSingleCountryController(countryCode, icaoEnglishText, stationKey = "") {
-            if (isListening || !icaoEnglishText || !('speechSynthesis' in window)) return;
-            speechGenerationId++;
-            const myGen = speechGenerationId;
-            cancelAllSpeechSafe();
+            if (!icaoEnglishText || !('speechSynthesis' in window)) return;
+            if (isPttActiveOrStarting()) return;
 
+            const myGen = speechGenerationId;
             const effectiveStation = stationKey || activeStationName;
             const profile = getRegionalVoiceProfile(countryCode);
             const humanizedSpeech = humanizeRadioTextForSpeech(icaoEnglishText);
             const singleVoice = getSingleVoiceForCountry(countryCode, profile.accentLang, effectiveStation);
-
             const stationOffset = ((hashStationKey(effectiveStation) % 5) - 2) * 0.025;
 
-            setTimeout(() => {
-                if (isListening || myGen !== speechGenerationId) return;
-                const utter = new SpeechSynthesisUtterance(humanizedSpeech);
-                window._utterancePool.push(utter);
-
-                if (singleVoice) {
-                    utter.voice = singleVoice;
-                    utter.lang = singleVoice.lang;
-                } else {
-                    utter.lang = profile.accentLang;
-                }
-                utter.rate = profile.rate;
-                utter.pitch = Math.max(0.88, Math.min(1.12, profile.pitch + stationOffset));
-
-                utter.onstart = () => {
-                    if (myGen !== speechGenerationId) return;
-                    playVhfClick('start');
-                    startVhfStatic();
-                    startTtsKeepAlive();
-                };
-                utter.onend = () => {
-                    if (myGen !== speechGenerationId) return;
-                    stopTtsKeepAlive();
-                    stopVhfStatic();
-                    playVhfClick('end');
-                };
-                utter.onerror = () => {
-                    if (myGen !== speechGenerationId) return;
-                    stopTtsKeepAlive();
-                    stopVhfStatic();
-                };
-
-                try {
-                    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-                } catch (e) {}
-                window.speechSynthesis.speak(utter);
-            }, 60);
+            enqueueSpeechItem({
+                genId: myGen,
+                text: humanizedSpeech,
+                voice: singleVoice,
+                lang: singleVoice ? singleVoice.lang : profile.accentLang,
+                rate: profile.rate,
+                pitch: Math.max(0.88, Math.min(1.12, profile.pitch + stationOffset)),
+                playStartClick: true,
+                playEndClick: true
+            });
         }
 
         // ==========================================
-        // 9. MIKROFON PERSISTENT SESSION LOCK (ANTI-PROMPT BERULANG & TANPA PESAN ERROR MENGGANGGU)
+        // 9. MIKROFON PERSISTENT SESSION LOCK (ANTI-PROMPT BERULANG & PTT LOCK)
         // ==========================================
         let recognition = null;
         let isListening = false;
@@ -2487,7 +2599,6 @@
             }
         }
 
-        // Mengunci stream audio mikrofon sekali saja selama tab terbuka agar browser tidak meminta izin berulang kali
         async function primeMicrophoneSession(userTriggered = false) {
             if (persistentMicStream && persistentMicStream.active) {
                 const tracks = persistentMicStream.getAudioTracks();
@@ -2519,7 +2630,7 @@
                     if (userTriggered) {
                         const input = document.getElementById('manual-msg');
                         if (input) {
-                            input.placeholder = "Tips: Jalankan lewat http://localhost agar izin mic Edge tersimpan permanen, atau ketik radio di sini...";
+                            input.placeholder = "Tips: Jalankan via http://localhost agar izin mic Edge tersimpan permanen, atau ketik radio di sini...";
                             input.focus();
                         }
                     }
@@ -2530,7 +2641,6 @@
             }
         }
 
-        // Cek status izin mikrofon secara halus saat halaman dimuat (tanpa popup)
         if (navigator.permissions && navigator.permissions.query) {
             navigator.permissions.query({ name: 'microphone' }).then(status => {
                 if (status.state === 'granted') {
@@ -2565,6 +2675,7 @@
                 micPermissionGranted = true;
                 finalTranscript = "";
                 interimTranscript = "";
+                cancelAllSpeechSafe(true);
                 playVhfClick('start');
                 updateMicPillUI('listening');
                 hideSmartCoPilotBar(false);
@@ -2577,7 +2688,7 @@
             };
 
             rec.onresult = (event) => {
-                cancelAllSpeechSafe();
+                cancelAllSpeechSafe(true);
                 clearTimeout(silenceTimer);
                 let currentInterim = "";
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -2608,6 +2719,7 @@
                 isStartingMic = false;
                 isListening = false;
                 resetTalkButtonUI();
+                processSpeechQueue();
 
                 if (event.error === 'aborted' || event.error === 'no-speech') {
                     return;
@@ -2643,6 +2755,7 @@
                     if (coPilotState.visible) {
                         document.getElementById('copilot-assist-bar').classList.add('show');
                     }
+                    processSpeechQueue();
                     return;
                 }
 
@@ -2664,6 +2777,7 @@
                 } else if (coPilotState.visible) {
                     document.getElementById('copilot-assist-bar').classList.add('show');
                 }
+                processSpeechQueue();
             };
 
             return rec;
@@ -2674,8 +2788,8 @@
         async function startRecognitionDirectly() {
             if (isStartingMic || isListening) return;
             isStartingMic = true;
+            cancelAllSpeechSafe(true);
 
-            // Kunci stream mikrofon di latar belakang agar sesi tetap hangat tanpa prompt berulang
             await primeMicrophoneSession(false);
 
             if (!recognition) {
@@ -2683,6 +2797,7 @@
             }
             if (!recognition) {
                 isStartingMic = false;
+                processSpeechQueue();
                 return;
             }
 
@@ -2700,8 +2815,11 @@
                             recognition.start();
                         } catch (errRetry) {
                             isStartingMic = false;
+                            processSpeechQueue();
                         }
                     }, 120);
+                } else {
+                    processSpeechQueue();
                 }
             }
         }
@@ -2715,12 +2833,13 @@
                 return;
             }
 
-            if (isListening) {
+            if (isListening || isStartingMic) {
                 clearTimeout(silenceTimer);
                 isListening = false;
                 isStartingMic = false;
                 resetTalkButtonUI();
-                try { recognition.stop(); } catch (e) {}
+                try { if (recognition) recognition.stop(); } catch (e) {}
+                processSpeechQueue();
                 return;
             }
 
@@ -2787,29 +2906,27 @@
                     reply += ` ${pendingHandoffStation} is expecting you on ${pendingHandoffFreq}.`;
                 }
 
-                setTimeout(() => {
-                    appendLog('atc', replyStationHeader, reply);
-                    speakSingleCountryController(replyCc, reply);
+                appendLog('atc', replyStationHeader, reply);
+                speakSingleCountryController(replyCc, reply);
 
-                    if (pendingBorderFir) {
-                        setSmartCoPilotAction(
-                            "BORDER_ENTRY",
-                            `🛂 FIR BORDER: Request ${pendingBorderFir.countryName} airspace entry clearance`,
-                            "🛂 REQUEST FIR ENTRY",
-                            `${pendingBorderFir.firName}, ${spokenCs}, Flight Level ${Math.round(currentAlt/100)}, requesting clearance to enter ${pendingBorderFir.countryName} airspace.`
-                        );
-                    } else if (pendingHandoffStation) {
-                        const fl = currentAlt >= 10000 ? `Flight Level ${Math.round(currentAlt/100)}` : `${Math.round(currentAlt)} feet`;
-                        setSmartCoPilotAction(
-                            "NEXT_ACTION",
-                            `💡 NEXT STEP: Check-In with ${pendingHandoffStation} (${pendingHandoffFreq})`,
-                            "🎙️ CHECK-IN ATC",
-                            `${pendingHandoffStation}, ${spokenCs}, with you at ${fl}.`
-                        );
-                    } else {
-                        suggestNextCoPilotStep();
-                    }
-                }, 250);
+                if (pendingBorderFir) {
+                    setSmartCoPilotAction(
+                        "BORDER_ENTRY",
+                        `🛂 FIR BORDER: Request ${pendingBorderFir.countryName} airspace entry clearance`,
+                        "🛂 REQUEST FIR ENTRY",
+                        `${pendingBorderFir.firName}, ${spokenCs}, Flight Level ${Math.round(currentAlt/100)}, requesting clearance to enter ${pendingBorderFir.countryName} airspace.`
+                    );
+                } else if (pendingHandoffStation) {
+                    const fl = currentAlt >= 10000 ? `Flight Level ${Math.round(currentAlt/100)}` : `${Math.round(currentAlt)} feet`;
+                    setSmartCoPilotAction(
+                        "NEXT_ACTION",
+                        `💡 NEXT STEP: Check-In with ${pendingHandoffStation} (${pendingHandoffFreq})`,
+                        "🎙️ CHECK-IN ATC",
+                        `${pendingHandoffStation}, ${spokenCs}, with you at ${fl}.`
+                    );
+                } else {
+                    suggestNextCoPilotStep();
+                }
                 return;
             }
 
@@ -3097,10 +3214,8 @@
                 reply = `${spokenCs}, ${activeStationName}, say again, unreadable transmission.`;
             }
 
-            setTimeout(() => {
-                appendLog('atc', replyStationHeader, reply, isEmgReply, isBorderReply);
-                speakSingleCountryController(replyCc, reply);
-            }, 300);
+            appendLog('atc', replyStationHeader, reply, isEmgReply, isBorderReply);
+            speakSingleCountryController(replyCc, reply);
         }
 
         function appendLog(sender, title, message, isEmergencyMsg = false, isBorderMsg = false) {
@@ -3218,52 +3333,90 @@
         }
 
         // ==========================================
-        // 12. KONEKSI WEBSOCKET AEROFLY FS 4 + AUTO-RECONNECT
+        // 12. KONEKSI WEBSOCKET AEROFLY FS 4 OPSIONAL (OPT-IN / NON-BLOCKING)
         // ==========================================
         let aeroflySocket = null;
         let reconnectTimer = null;
+        let bridgeOptInEnabled = false;
+
+        function setBridgeStatusBadge(state, labelText) {
+            const statusEl = document.getElementById('conn-status');
+            if (!statusEl) return;
+            statusEl.classList.remove('bridge-live');
+            if (state === 'connected') {
+                statusEl.classList.add('bridge-live');
+                statusEl.innerText = labelText || "BRIDGE CONNECTED";
+                statusEl.style.borderColor = "#38bdf8";
+                statusEl.style.color = "#38bdf8";
+            } else if (state === 'connecting') {
+                statusEl.innerText = labelText || "SCANNING BRIDGE...";
+                statusEl.style.borderColor = "#facc15";
+                statusEl.style.color = "#facc15";
+            } else {
+                statusEl.innerText = labelText || "NO BRIDGE (DIRECT READY)";
+                statusEl.style.borderColor = "#10b981";
+                statusEl.style.color = "#10b981";
+            }
+        }
 
         function connectAeroflyBridge(manualTrigger = false) {
-            const statusEl = document.getElementById('conn-status');
+            if (manualTrigger) {
+                bridgeOptInEnabled = true;
+            }
+            if (!bridgeOptInEnabled) {
+                setBridgeStatusBadge('idle', "NO BRIDGE (DIRECT READY)");
+                return;
+            }
             if (aeroflySocket && (aeroflySocket.readyState === WebSocket.OPEN || aeroflySocket.readyState === WebSocket.CONNECTING)) {
                 return;
             }
 
             if (manualTrigger) {
-                statusEl.innerText = "CONNECTING...";
-                statusEl.style.borderColor = "#facc15";
-                statusEl.style.color = "#facc15";
+                setBridgeStatusBadge('connecting', "CONNECTING BRIDGE...");
             }
 
             try {
-                aeroflySocket = new WebSocket('ws://localhost:8765');
-                aeroflySocket.onopen = () => {
-                    statusEl.innerText = "CONNECTED TO AEROFLY FS 4";
-                    statusEl.style.borderColor = "#38bdf8";
-                    statusEl.style.color = "#38bdf8";
+                const ws = new WebSocket('ws://localhost:8765');
+                aeroflySocket = ws;
+
+                const connectTimeout = setTimeout(() => {
+                    if (ws.readyState === WebSocket.CONNECTING) {
+                        try { ws.close(); } catch (e) {}
+                    }
+                }, 1500);
+
+                ws.onopen = () => {
+                    clearTimeout(connectTimeout);
+                    setBridgeStatusBadge('connected', "BRIDGE CONNECTED");
                 };
-                aeroflySocket.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.action === "toggle_ptt") { toggleVoiceInput(); return; }
-                    if (data.action === "center_map") { centerOnPlane(); return; }
-                    if (!isDemoMode && data.lat && data.lon) {
-                        updateAircraftPosition(data.lat, data.lon, data.heading || 0, data.altitude || 0, data.speed || 0);
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.action === "toggle_ptt") { toggleVoiceInput(); return; }
+                        if (data.action === "center_map") { centerOnPlane(); return; }
+                        if (!isDemoMode && typeof data.lat === 'number' && typeof data.lon === 'number') {
+                            updateAircraftPosition(data.lat, data.lon, data.heading || 0, data.altitude || 0, data.speed || 0);
+                        }
+                    } catch (e) {}
+                };
+                ws.onclose = () => {
+                    clearTimeout(connectTimeout);
+                    aeroflySocket = null;
+                    setBridgeStatusBadge('idle', "NO BRIDGE (DIRECT READY)");
+                    clearTimeout(reconnectTimer);
+                    if (bridgeOptInEnabled) {
+                        reconnectTimer = setTimeout(() => connectAeroflyBridge(false), 6000);
                     }
                 };
-                aeroflySocket.onclose = () => {
-                    statusEl.innerText = "3D ATM READY";
-                    statusEl.style.borderColor = "#10b981";
-                    statusEl.style.color = "#10b981";
-                    aeroflySocket = null;
-                    clearTimeout(reconnectTimer);
-                    reconnectTimer = setTimeout(() => connectAeroflyBridge(false), 4000);
+                ws.onerror = () => {
+                    clearTimeout(connectTimeout);
+                    try { ws.close(); } catch (e) {}
                 };
-                aeroflySocket.onerror = () => {
-                    try { aeroflySocket.close(); } catch (e) {}
-                };
-            } catch (e) {}
+            } catch (e) {
+                aeroflySocket = null;
+                setBridgeStatusBadge('idle', "NO BRIDGE (DIRECT READY)");
+            }
         }
-
 
         // ==========================================
         // 13. PROSEDUR STEP CLIMB (LONG-HAUL RVSM +2,000 FT)
@@ -3289,8 +3442,8 @@
             handlePilotMessage(reqMsg, false, true);
         }
 
-
-        connectAeroflyBridge(false);
+        // Default langsung siap pakai tanpa menyalakan bridge dulu (bridge opsional saat diklik)
+        setBridgeStatusBadge('idle', "NO BRIDGE (DIRECT READY)");
     </script>
 </body>
 </html>
