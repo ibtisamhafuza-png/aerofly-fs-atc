@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Globe ATM // Pure Natural ICAO ATC V7.0</title>
+    <title>3D Globe ATM // Pure Natural ICAO ATC V7.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link id="maplibre-css" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"
@@ -589,7 +589,7 @@
 <body>
 
     <header>
-        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V7.0</div>
+        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V7.1</div>
         <div class="header-controls">
             <button class="lang-toggle-btn" id="btn-lang-toggle" onclick="toggleAppLanguage()" title="Switch UI & ATC Voice Language (EN / ID) — ICAO codes protected">🌐 LANG: EN</button>
             <div class="clock-box" id="dynamic-clock" title="Aviation Zulu (UTC) & Local Time // UTC Offset">🕒 00:00:00Z // LOC WADD 00:00</div>
@@ -690,10 +690,10 @@
 
             <div class="radio-log" id="radio-log">
                 <div class="msg-atc" id="welcome-sys-msg">
-                    <span class="msg-sys-title">🌍 [ATC SYSTEM V7.0 — BILINGUAL EN/ID, EXPANDED ICAO CALLSIGNS &amp; PROTECTED CODES]</span>
-                    • <strong>Language Switch (EN / ID):</strong> Click <code>🌐 LANG: EN / ID</code> in the top bar to switch UI and ATC narration between English (ICAO) and Indonesian while protecting aviation codes (<code>ILS</code>, <code>RNAV</code>, <code>VOR</code>, <code>IFR</code>, <code>QNH</code>, <code>FL</code>, <code>SQUAWK</code>, <code>RUNWAY</code>, <code>ICAO</code>).<br>
-                    • <strong>Expanded Airline Telephony:</strong> Supports 120+ airline ICAO callsigns (<code>UAE</code> → Emirates, <code>GIA</code> → Garuda, <code>SIA</code> → Singapore, <code>ETD</code> → Etihad, <code>QTR</code> → Qatari, <code>BAW</code> → Speedbird, <code>DLH</code> → Lufthansa, <code>LNI</code> → Lion Inter, <code>BTK</code> → Batik, etc.).<br>
-                    • <strong>Direct Play &amp; Bridge Mode:</strong> Fly immediately without starting <code>bridge.py</code> first (<em>opt-in</em> bridge), with V6.9 Fix anti-spam off-course (26° / 3m / 8°) and FIFO speech queue intact.
+                    <span class="msg-sys-title">🌍 [ATC SYSTEM V7.1 — ADULT VOICE LOCK, ANTI-JITTER MAP &amp; DOUBLE RIGHT-CLICK RESET]</span>
+                    • <strong>Adult Voice Filter (No Child/High-Pitch TTS):</strong> Automatically filters out child/high-pitch voices (<em>Ana, Kid, Child, Junior, etc.</em>) and clamps pitch to natural adult controller range (<code>0.94–1.05</code>).<br>
+                    • <strong>Smooth Anti-Jitter 3D Map:</strong> Eliminates repeated camera micro-jumps during <code>autoFollowPlane</code> and adds debounced resize handling so the 3D globe stays rock-steady.<br>
+                    • <strong>Double Right-Click Map Reset:</strong> Double right-click anywhere on the map to smoothly center the aircraft and reset camera rotation/bearing to <code>0°</code> (North-up).
                 </div>
             </div>
 
@@ -833,7 +833,7 @@
                 utter.lang = nextItem.lang;
             }
             if (typeof nextItem.rate === 'number') utter.rate = nextItem.rate;
-            if (typeof nextItem.pitch === 'number') utter.pitch = nextItem.pitch;
+            if (typeof nextItem.pitch === 'number') utter.pitch = Math.max(0.94, Math.min(1.05, nextItem.pitch));
 
             utter.onstart = () => {
                 if (isPttActiveOrStarting()) {
@@ -1225,6 +1225,9 @@
         let autoFollowPlane = true;
         let showFirBorders = true;
         let showAirportRadar = true;
+        let isResettingCamera = false;
+        let lastRightClickTs = 0;
+        let mapResizeDebounceTimer = null;
 
         function createRadarCircleCoords(lat, lon, radiusNM = 30, points = 64) {
             const coords = [];
@@ -1426,10 +1429,38 @@
                 });
 
                 map.on('dragstart', () => {
+                    if (isResettingCamera) return;
                     autoFollowPlane = false;
                     const btn = document.getElementById('btn-center');
                     btn.classList.remove('active');
-                    btn.innerText = "🎯 PUSATKAN PESAWAT (C / F9)";
+                    btn.innerText = appLang === 'en' ? "🎯 CENTER AIRCRAFT (C / F9)" : "🎯 PUSATKAN PESAWAT (C / F9)";
+                });
+
+                const mapContainerEl = document.getElementById('map');
+                if (mapContainerEl) {
+                    mapContainerEl.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                    });
+                    mapContainerEl.addEventListener('mousedown', (e) => {
+                        if (e.button === 2) {
+                            const nowClick = Date.now();
+                            if (nowClick - lastRightClickTs <= 340) {
+                                lastRightClickTs = 0;
+                                resetMapCenterAndNorth();
+                            } else {
+                                lastRightClickTs = nowClick;
+                            }
+                        }
+                    });
+                }
+
+                window.addEventListener('resize', () => {
+                    clearTimeout(mapResizeDebounceTimer);
+                    mapResizeDebounceTimer = setTimeout(() => {
+                        if (map && typeof map.resize === 'function') {
+                            map.resize();
+                        }
+                    }, 180);
                 });
             } catch (err) {
                 console.error("Gagal inisialisasi peta 3D:", err);
@@ -1439,15 +1470,43 @@
             document.getElementById('map-fallback-notice').style.display = 'block';
         }
 
-        function centerOnPlane() {
+        function resetMapCenterAndNorth() {
             autoFollowPlane = true;
+            isResettingCamera = true;
             if (map) {
                 const targetZoom = currentAlt > 20000 ? 6.0 : (currentAlt > 2000 ? 10.5 : 14.5);
-                map.flyTo({ center: [currentLon, currentLat], zoom: targetZoom, pitch: 35, duration: 900 });
+                map.easeTo({
+                    center: [currentLon, currentLat],
+                    zoom: targetZoom,
+                    bearing: 0,
+                    pitch: 20,
+                    duration: 650,
+                    essential: true
+                });
+                setTimeout(() => { isResettingCamera = false; }, 700);
+            } else {
+                isResettingCamera = false;
+            }
+            const btn = document.getElementById('btn-center');
+            if (btn) {
+                btn.classList.add('active');
+                btn.innerText = appLang === 'en' ? "🎯 CAMERA LOCKED (C / F9)" : "🎯 KAMERA TERKUNCI (C / F9)";
+            }
+        }
+
+        function centerOnPlane() {
+            autoFollowPlane = true;
+            isResettingCamera = true;
+            if (map) {
+                const targetZoom = currentAlt > 20000 ? 6.0 : (currentAlt > 2000 ? 10.5 : 14.5);
+                map.flyTo({ center: [currentLon, currentLat], zoom: targetZoom, bearing: 0, pitch: 25, duration: 850 });
+                setTimeout(() => { isResettingCamera = false; }, 900);
+            } else {
+                isResettingCamera = false;
             }
             const btn = document.getElementById('btn-center');
             btn.classList.add('active');
-            btn.innerText = "🎯 KAMERA TERKUNCI (C / F9)";
+            btn.innerText = appLang === 'en' ? "🎯 CAMERA LOCKED (C / F9)" : "🎯 KAMERA TERKUNCI (C / F9)";
         }
 
         function zoomToSpaceGlobe() {
@@ -2344,8 +2403,14 @@
                 }
             }
 
-            if (map && autoFollowPlane) {
-                map.easeTo({ center: [lon, lat], duration: 200 });
+            if (map && autoFollowPlane && !isResettingCamera && !map.isMoving()) {
+                const c = map.getCenter();
+                const driftDeg = Math.hypot(c.lng - lon, c.lat - lat);
+                const z = map.getZoom();
+                const driftThreshold = z > 11 ? 0.008 : (z > 7 ? 0.08 : 0.65);
+                if (driftDeg > driftThreshold) {
+                    map.easeTo({ center: [lon, lat], duration: 450, easing: t => t });
+                }
             }
 
             const fl = alt >= 10000 ? `FL${Math.round(alt/100)}` : `${Math.round(alt)} FT`;
@@ -2610,24 +2675,40 @@
             return h;
         }
 
+        function isLikelyChildOrHighPitchVoice(voice) {
+            if (!voice || !voice.name) return false;
+            const n = voice.name.toLowerCase();
+            const blockedKeywords = [
+                'child', 'kid', 'kids', 'junior', 'young', 'boy', 'girl', 'baby',
+                'ana', 'maisie', 'eloise', 'molly', 'millie', 'polly', 'zira', 'heera'
+            ];
+            return blockedKeywords.some(kw => new RegExp(`\\b${kw}\\b`, 'i').test(n));
+        }
+
+        function filterAdultVoices(voiceList) {
+            const adultOnly = voiceList.filter(v => !isLikelyChildOrHighPitchVoice(v));
+            return adultOnly.length > 0 ? adultOnly : voiceList;
+        }
+
         function getSingleVoiceForCountry(countryCode, accentLang, stationKey = "") {
             if (!('speechSynthesis' in window)) return null;
             if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
             const cacheKey = `${countryCode}::${stationKey || activeStationName}`;
             if (stationVoiceCache[cacheKey]) return stationVoiceCache[cacheKey];
 
-            const allEnglishNeural = availableVoices.filter(v =>
+            const adultVoices = filterAdultVoices(availableVoices);
+            const allEnglishNeural = adultVoices.filter(v =>
                 v.lang.toLowerCase().startsWith('en') &&
                 (v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('neural') || v.name.toLowerCase().includes('online'))
             );
-            const allEnglishAny = availableVoices.filter(v => v.lang.toLowerCase().startsWith('en'));
+            const allEnglishAny = adultVoices.filter(v => v.lang.toLowerCase().startsWith('en'));
 
             const target = accentLang.toLowerCase();
             const regionalNeural = allEnglishNeural.filter(v => v.lang.toLowerCase() === target);
             const pool = regionalNeural.length >= 2 ? regionalNeural : (allEnglishNeural.length > 0 ? allEnglishNeural : allEnglishAny);
 
             const idx = hashStationKey(cacheKey) % Math.max(1, pool.length);
-            const chosen = pool[idx] || availableVoices[0];
+            const chosen = pool[idx] || adultVoices[0] || availableVoices[0];
 
             if (chosen) stationVoiceCache[cacheKey] = chosen;
             return chosen;
@@ -2636,10 +2717,14 @@
         function getCoPilotVoice() {
             if (!('speechSynthesis' in window)) return null;
             if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
-            return availableVoices.find(v =>
+            const adultVoices = filterAdultVoices(availableVoices);
+            return adultVoices.find(v =>
                 v.lang.toLowerCase().includes('en-us') &&
-                (v.name.toLowerCase().includes('guy') || v.name.toLowerCase().includes('andrew') || v.name.toLowerCase().includes('christopher') || v.name.toLowerCase().includes('natural'))
-            ) || availableVoices.find(v => v.lang.toLowerCase().startsWith('en'));
+                (v.name.toLowerCase().includes('guy') || v.name.toLowerCase().includes('andrew') || v.name.toLowerCase().includes('christopher') || v.name.toLowerCase().includes('brian') || v.name.toLowerCase().includes('steffan'))
+            ) || adultVoices.find(v =>
+                v.lang.toLowerCase().startsWith('en') &&
+                (v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('neural'))
+            ) || adultVoices.find(v => v.lang.toLowerCase().startsWith('en'));
         }
 
         let speechGenerationId = 0;
@@ -2656,12 +2741,13 @@
         function getIndonesianVoiceIfAvailable() {
             if (!('speechSynthesis' in window)) return null;
             if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
-            const idNeural = availableVoices.filter(v =>
+            const adultVoices = filterAdultVoices(availableVoices);
+            const idNeural = adultVoices.filter(v =>
                 v.lang.toLowerCase().startsWith('id') &&
                 (v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('neural') || v.name.toLowerCase().includes('online'))
             );
             if (idNeural.length > 0) return idNeural[0];
-            const idAny = availableVoices.filter(v => v.lang.toLowerCase().startsWith('id'));
+            const idAny = adultVoices.filter(v => v.lang.toLowerCase().startsWith('id'));
             return idAny.length > 0 ? idAny[0] : null;
         }
 
@@ -2720,17 +2806,17 @@
             if (welcomeMsg) {
                 if (appLang === 'en') {
                     welcomeMsg.innerHTML = `
-                        <span class="msg-sys-title">🌍 [ATC SYSTEM V7.0 — BILINGUAL EN/ID, EXPANDED ICAO CALLSIGNS &amp; PROTECTED CODES]</span>
-                        • <strong>Language Switch (EN / ID):</strong> Click <code>🌐 LANG: EN / ID</code> in the top bar to switch UI and ATC narration between English (ICAO) and Indonesian while protecting aviation codes (<code>ILS</code>, <code>RNAV</code>, <code>VOR</code>, <code>IFR</code>, <code>QNH</code>, <code>FL</code>, <code>SQUAWK</code>, <code>RUNWAY</code>, <code>ICAO</code>).<br>
-                        • <strong>Expanded Airline Telephony:</strong> Supports 120+ airline ICAO callsigns (<code>UAE</code> → Emirates, <code>GIA</code> → Garuda, <code>SIA</code> → Singapore, <code>ETD</code> → Etihad, <code>QTR</code> → Qatari, <code>BAW</code> → Speedbird, <code>DLH</code> → Lufthansa, <code>LNI</code> → Lion Inter, <code>BTK</code> → Batik, etc.).<br>
-                        • <strong>Direct Play &amp; Bridge Mode:</strong> Fly immediately without starting <code>bridge.py</code> first (<em>opt-in</em> bridge), with V6.9 Fix anti-spam off-course (26° / 3m / 8°) and FIFO speech queue intact.
+                        <span class="msg-sys-title">🌍 [ATC SYSTEM V7.1 — ADULT VOICE LOCK, ANTI-JITTER MAP &amp; DOUBLE RIGHT-CLICK RESET]</span>
+                        • <strong>Adult Voice Filter (No Child/High-Pitch TTS):</strong> Automatically filters out child/high-pitch voices (<em>Ana, Kid, Child, Junior, etc.</em>) and clamps pitch to natural adult controller range (<code>0.94–1.05</code>).<br>
+                        • <strong>Smooth Anti-Jitter 3D Map:</strong> Eliminates repeated camera micro-jumps during <code>autoFollowPlane</code> and adds debounced resize handling so the 3D globe stays rock-steady.<br>
+                        • <strong>Double Right-Click Map Reset:</strong> Double right-click anywhere on the map to smoothly center the aircraft and reset camera rotation/bearing to <code>0°</code> (North-up).
                     `;
                 } else {
                     welcomeMsg.innerHTML = `
-                        <span class="msg-sys-title">🌍 [SISTEM ATC V7.0 — PILIH BAHASA EN/ID, CALLSIGN ICAO LUAS &amp; KODE TERLINDUNGI]</span>
-                        • <strong>Tombol Pilih Bahasa (EN / ID):</strong> Klik <code>🌐 LANG: EN / ID</code> di bar atas untuk mengganti bahasa UI &amp; narasi ATC tanpa mengubah kode aviasi baku (<code>ILS</code>, <code>RNAV</code>, <code>VOR</code>, <code>IFR</code>, <code>QNH</code>, <code>FL</code>, <code>SQUAWK</code>, <code>RUNWAY</code>, <code>ICAO</code>).<br>
-                        • <strong>Kamus Maskapai Diperluas:</strong> Mendukung 120+ kode ICAO maskapai (<code>UAE</code> → Emirates, <code>GIA</code> → Garuda, <code>SIA</code> → Singapore, <code>ETD</code> → Etihad, <code>QTR</code> → Qatari, <code>BAW</code> → Speedbird, <code>DLH</code> → Lufthansa, <code>LNI</code> → Lion Inter, <code>BTK</code> → Batik, dll.).<br>
-                        • <strong>Direct Play &amp; Bridge Mode:</strong> Tetap bisa langsung terbang tanpa menyalakan <code>bridge.py</code> dulu (<em>opt-in</em>), lengkap dengan anti-spam <em>off-course</em> (26° / 3m / 8°) dan antrean suara FIFO.
+                        <span class="msg-sys-title">🌍 [SISTEM ATC V7.1 — SUARA DEWASA, MAP ANTI-GETAR &amp; KLIK KANAN 2x RESET]</span>
+                        • <strong>Filter Suara Dewasa (Anti Suara Anak Kecil):</strong> Otomatis menyaring suara anak-anak/nada melengking (<em>Ana, Kid, Child, Junior, dll.</em>) dan mengunci pitch di rentang dewasa natural (<code>0.94–1.05</code>).<br>
+                        • <strong>Peta 3D Anti-Getar:</strong> Menghilangkan <code>easeTo</code> berulang tiap 600ms saat mengikuti pesawat serta menambah <em>debounce</em> pada <code>resize</code> agar peta stabil.<br>
+                        • <strong>Klik Kanan 2x untuk Center &amp; Reset Rotasi:</strong> Klik kanan 2 kali di area peta untuk memusatkan pesawat dan mengembalikan arah utara ke <code>0°</code>.
                     `;
                 }
             }
@@ -2777,7 +2863,7 @@
                 voice: chosenVoice,
                 lang: chosenLang,
                 rate: profile.rate,
-                pitch: Math.max(0.88, Math.min(1.12, profile.pitch + stationOffset)),
+                pitch: Math.max(0.94, Math.min(1.05, profile.pitch + stationOffset)),
                 playStartClick: true,
                 playEndClick: true
             });
