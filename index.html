@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Globe ATM // Pure Natural ICAO ATC V7.2</title>
+    <title>3D Globe ATM // Pure Natural ICAO ATC V7.3</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link id="maplibre-css" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"
@@ -128,6 +128,20 @@
             text-transform: uppercase;
             font-weight: 700;
             color: var(--accent-yellow);
+        }
+
+
+        .runway-select-input {
+            width: 82px;
+            background: var(--bg-dark);
+            border: 1px solid var(--accent-amber);
+            color: var(--accent-yellow);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.71rem;
+            font-weight: 700;
+            padding: 4px 6px;
+            border-radius: 5px;
+            text-transform: uppercase;
         }
 
         .search-ap-input {
@@ -589,14 +603,14 @@
 <body>
 
     <header>
-        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V7.2</div>
+        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V7.3</div>
         <div class="header-controls">
             <button class="lang-toggle-btn" id="btn-lang-toggle" onclick="toggleAppLanguage()" title="Switch UI & ATC Voice Language (EN / ID) — ICAO codes protected">🌐 LANG: EN</button>
             <div class="clock-box" id="dynamic-clock" title="Aviation Zulu (UTC) & Local Time // UTC Offset">🕒 00:00:00Z // LOC WADD 00:00</div>
             <button class="vhf-toggle-btn" id="btn-vhf-fx" onclick="toggleVhfEffects()" title="Efek klik & squelch radio VHF kokpit">🔊 VHF FX: ON</button>
             <div class="mic-pill" id="mic-status-pill" onclick="primeMicrophoneSession(true)" title="Klik untuk mengunci izin mikrofon selama sesi berlangsung">🎤 MIC: STANDBY</div>
             <div class="voice-badge" id="voice-engine-badge" title="Gunakan Microsoft Edge untuk suara Neural Manusia Asli terbaik">🎙️ CHECKING VOICE...</div>
-            <select id="aircraft-type" class="ctrl-select" onchange="validateCallsignInput()" title="Pilih Pesawat Aerofly FS 4 (ICAO Aircraft Type)" style="max-width: 215px;">
+            <select id="aircraft-type" class="ctrl-select" onchange="validateCallsignInput(); refreshRunwayDatalists();" title="Pilih Pesawat Aerofly FS 4 (ICAO Aircraft Type)" style="max-width: 215px;">
                 <option value="" selected disabled>-- PILIH PESAWAT FS4 --</option>
                 <optgroup label="Wide-Body Airliners (Aerofly FS 4)">
                     <option value="A388">A388 (Airbus A380-800)</option>
@@ -672,10 +686,18 @@
             <div class="atm-box">
                 <div class="atm-row">
                     <label>ROUTE:</label>
-                    <input list="airports-datalist" id="fp-origin" class="search-ap-input" value="" placeholder="Pilih asal (ICAO/Kota)..." onfocus="this.select()">
+                    <input list="airports-datalist" id="fp-origin" class="search-ap-input" value="" placeholder="Asal (ICAO/Kota)..." onfocus="this.select()" onchange="refreshRunwayDatalists()" oninput="refreshRunwayDatalists()">
                     <span style="color:#facc15;">➔</span>
-                    <input list="airports-datalist" id="fp-dest" class="search-ap-input" value="" placeholder="Pilih tujuan (ICAO/Kota)..." onfocus="this.select()">
+                    <input list="airports-datalist" id="fp-dest" class="search-ap-input" value="" placeholder="Tujuan (ICAO/Kota)..." onfocus="this.select()" onchange="refreshRunwayDatalists()" oninput="refreshRunwayDatalists()">
                     <button class="btn-mini" onclick="activateFlightPlan()">FILE FPL</button>
+                </div>
+                <div class="atm-row">
+                    <label>DEP RWY:</label>
+                    <input list="dep-rwy-datalist" id="fp-dep-rwy" class="runway-select-input" value="" placeholder="AUTO" onfocus="this.select()" onchange="onManualRunwayChanged()" title="Pilih atau ketik bebas Runway Take-Off (cth: 09, 27, 07R)">
+                    <label>ARR RWY:</label>
+                    <input list="arr-rwy-datalist" id="fp-arr-rwy" class="runway-select-input" value="" placeholder="AUTO" onfocus="this.select()" onchange="onManualRunwayChanged()" title="Pilih atau ketik bebas Runway Landing (mengunci Approach, ILS & ATIS)">
+                    <datalist id="dep-rwy-datalist"></datalist>
+                    <datalist id="arr-rwy-datalist"></datalist>
                 </div>
                 <div class="atm-row">
                     <label>ATM FIR:</label>
@@ -1081,6 +1103,30 @@
             { code: "CYVR", fir: "CZVR", firName: "Vancouver Center", accFreq: "125.10", appFreq: "128.17", twrFreq: "118.70", gndFreq: "121.70", delFreq: "121.40", name: "Vancouver Intl", lat: 49.1967, lon: -123.1815, tz: -8, rwyHeavy: "08R", rwyMed: "26L", taxi: "Taxiway Alpha and Charlie", gateHeavy: "International Gate D64", gateMed: "Domestic Gate C32", cc: "CA", countryName: "Canadian" },
             { code: "SBGR", fir: "SBBS", firName: "Brasilia Center", accFreq: "125.05", appFreq: "119.80", twrFreq: "118.40", gndFreq: "121.90", delFreq: "121.70", name: "Sao Paulo Guarulhos", lat: -23.4356, lon: -46.4731, tz: -3, rwyHeavy: "09L", rwyMed: "27R", taxi: "Taxiway Alpha and Echo", gateHeavy: "Terminal 3 Gate 305", gateMed: "Terminal 2 Gate 214", cc: "BR", countryName: "Brazilian" },
 
+
+            // AFRICA HUBS & CODE F / A380 AIRPORTS
+            { code: "HECA", fir: "HECC", firName: "Cairo Control", accFreq: "126.30", appFreq: "119.30", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Cairo Intl", lat: 30.1114, lon: 31.4139, tz: 2, rwyHeavy: "05C", rwyMed: "23C", runways: ["05L", "23R", "05C", "23C", "05R", "23L"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal 3 Gate G4", gateMed: "Terminal 2 Gate E8", cc: "EG", countryName: "Egyptian" },
+            { code: "FAOR", fir: "FAJA", firName: "Johannesburg Control", accFreq: "126.70", appFreq: "124.50", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Johannesburg O.R. Tambo", lat: -26.1367, lon: 28.2411, tz: 2, rwyHeavy: "03L", rwyMed: "21R", runways: ["03L", "21R", "03R", "21L"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "International Terminal Gate A6", gateMed: "Domestic Gate C12", cc: "ZA", countryName: "South African" },
+            { code: "FACT", fir: "FACA", firName: "Cape Town Control", accFreq: "125.10", appFreq: "119.70", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Cape Town Intl", lat: -33.9715, lon: 18.6021, tz: 2, rwyHeavy: "01", rwyMed: "19", runways: ["01", "19", "16", "34"], taxi: "Taxiway Alpha and Echo", gateHeavy: "International Gate A4", gateMed: "Domestic Gate B8", cc: "ZA", countryName: "South African" },
+            { code: "HAAB", fir: "HAAA", firName: "Addis Ababa Control", accFreq: "125.10", appFreq: "119.70", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Addis Ababa Bole", lat: 8.9779, lon: 38.7993, tz: 3, rwyHeavy: "07R", rwyMed: "25L", runways: ["07R", "25L", "07L", "25R"], taxi: "Taxiway Alpha and Charlie", gateHeavy: "Terminal 2 Gate A10", gateMed: "Gate B6", cc: "ET", countryName: "Ethiopian" },
+            { code: "GMMN", fir: "GMMM", firName: "Casablanca Control", accFreq: "125.70", appFreq: "119.50", twrFreq: "118.50", gndFreq: "121.90", delFreq: "121.70", name: "Casablanca Mohammed V", lat: 33.3675, lon: -7.5899, tz: 1, rwyHeavy: "17L", rwyMed: "35R", runways: ["17L", "35R", "17R", "35L"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal 2 Gate A5", gateMed: "Terminal 1 Gate B9", cc: "MA", countryName: "Moroccan" },
+            { code: "HKJK", fir: "HKNA", firName: "Nairobi Control", accFreq: "125.30", appFreq: "124.30", twrFreq: "118.70", gndFreq: "121.90", delFreq: "121.70", name: "Nairobi Jomo Kenyatta", lat: -1.3192, lon: 36.9278, tz: 3, rwyHeavy: "06", rwyMed: "24", runways: ["06", "24"], taxi: "Taxiway Alpha and Echo", gateHeavy: "Terminal 1A Gate 14", gateMed: "Terminal 1B Gate 6", cc: "KE", countryName: "Kenyan" },
+            { code: "DNMM", fir: "DNKK", firName: "Kano/Lagos Control", accFreq: "127.30", appFreq: "124.70", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Lagos Murtala Muhammed", lat: 6.5774, lon: 3.3212, tz: 1, rwyHeavy: "18R", rwyMed: "36L", runways: ["18R", "36L", "18L", "36R"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "International Terminal Gate E4", gateMed: "Gate D2", cc: "NG", countryName: "Nigerian" },
+            { code: "DAAG", fir: "DAAA", firName: "Algiers Control", accFreq: "125.70", appFreq: "119.10", twrFreq: "118.70", gndFreq: "121.90", delFreq: "121.70", name: "Algiers Houari Boumediene", lat: 36.6910, lon: 3.2154, tz: 1, rwyHeavy: "05", rwyMed: "23", runways: ["05", "23", "09", "27"], taxi: "Taxiway Alpha and Charlie", gateHeavy: "Terminal West Gate 12", gateMed: "Terminal 1 Gate 5", cc: "DZ", countryName: "Algerian" },
+            { code: "DTTA", fir: "DTTC", firName: "Tunis Control", accFreq: "124.70", appFreq: "119.50", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Tunis Carthage", lat: 36.8510, lon: 10.2272, tz: 1, rwyHeavy: "01", rwyMed: "19", runways: ["01", "19", "11", "29"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "Main Terminal Gate 8", gateMed: "Gate 4", cc: "TN", countryName: "Tunisian" },
+            { code: "FIMP", fir: "FIMM", firName: "Mauritius Control", accFreq: "128.30", appFreq: "119.10", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Mauritius SSR Intl", lat: -20.4302, lon: 57.6836, tz: 4, rwyHeavy: "14", rwyMed: "32", runways: ["14", "32"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "International Gate 10", gateMed: "Gate 4", cc: "MU", countryName: "Mauritian" },
+
+            // EXTRA GLOBAL CODE F / A380 HUBS
+            { code: "OMAA", fir: "OMAE", firName: "Emirates Radar", accFreq: "124.85", appFreq: "124.40", twrFreq: "119.20", gndFreq: "121.75", delFreq: "121.65", name: "Abu Dhabi Zayed Intl", lat: 24.4330, lon: 54.6511, tz: 4, rwyHeavy: "13R", rwyMed: "31L", runways: ["13R", "31L", "13L", "31R"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal A Gate C28", gateMed: "Gate B14", cc: "AE", countryName: "Emirates" },
+            { code: "OERK", fir: "OEJD", firName: "Riyadh Control", accFreq: "126.50", appFreq: "119.70", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Riyadh King Khalid", lat: 24.9576, lon: 46.6988, tz: 3, rwyHeavy: "15L", rwyMed: "33R", runways: ["15L", "33R", "15R", "33L"], taxi: "Taxiway Alpha and Kilo", gateHeavy: "Terminal 1 Gate 112", gateMed: "Terminal 3 Gate 308", cc: "SA", countryName: "Saudi" },
+            { code: "EGCC", fir: "EGTT", firName: "Scottish/London Control", accFreq: "132.60", appFreq: "118.57", twrFreq: "118.62", gndFreq: "121.85", delFreq: "121.70", name: "Manchester Airport", lat: 53.3537, lon: -2.2750, tz: 0, rwyHeavy: "05L", rwyMed: "23R", runways: ["05L", "23R", "05R", "23L"], taxi: "Taxiway Alpha and Juliet", gateHeavy: "Terminal 1 Gate 12", gateMed: "Terminal 2 Gate 206", cc: "GB", countryName: "United Kingdom" },
+            { code: "LOWW", fir: "LOVV", firName: "Wien Radar", accFreq: "124.75", appFreq: "119.80", twrFreq: "119.40", gndFreq: "121.60", delFreq: "122.12", name: "Vienna Schwechat", lat: 48.1103, lon: 16.5697, tz: 1, rwyHeavy: "16", rwyMed: "34", runways: ["11", "29", "16", "34"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal 3 Gate G12", gateMed: "Terminal 1 Gate C34", cc: "AT", countryName: "Austrian" },
+            { code: "KDFW", fir: "KZFW", firName: "Fort Worth Center", accFreq: "126.45", appFreq: "124.30", twrFreq: "126.55", gndFreq: "121.65", delFreq: "128.25", name: "Dallas Fort Worth", lat: 32.8998, lon: -97.0403, tz: -6, rwyHeavy: "17C", rwyMed: "35C", runways: ["17L", "35R", "17C", "35C", "18R", "36L", "13R", "31L"], taxi: "Taxiway Echo and Kilo", gateHeavy: "Terminal D Gate D22", gateMed: "Terminal A Gate A18", cc: "US", countryName: "United States" },
+            { code: "KIAH", fir: "KZHU", firName: "Houston Center", accFreq: "125.15", appFreq: "124.35", twrFreq: "120.72", gndFreq: "121.70", delFreq: "128.10", name: "Houston George Bush", lat: 29.9902, lon: -95.3368, tz: -6, rwyHeavy: "08R", rwyMed: "26L", runways: ["08L", "26R", "08R", "26L", "09", "27", "15L", "33R"], taxi: "Taxiway November and Sierra", gateHeavy: "Terminal E Gate E12", gateMed: "Terminal C Gate C30", cc: "US", countryName: "United States" },
+            { code: "KIAD", fir: "KZDC", firName: "Washington Center", accFreq: "125.45", appFreq: "126.10", twrFreq: "120.10", gndFreq: "121.90", delFreq: "135.70", name: "Washington Dulles", lat: 38.9531, lon: -77.4565, tz: -5, rwyHeavy: "01R", rwyMed: "19L", runways: ["01R", "19L", "01C", "19C", "01L", "19R", "12", "30"], taxi: "Taxiway Juliet and Kilo", gateHeavy: "Concourse B Gate B46", gateMed: "Concourse C Gate C14", cc: "US", countryName: "United States" },
+            { code: "KBOS", fir: "KZBW", firName: "Boston Center", accFreq: "124.85", appFreq: "120.60", twrFreq: "128.80", gndFreq: "121.90", delFreq: "121.65", name: "Boston Logan", lat: 42.3656, lon: -71.0096, tz: -5, rwyHeavy: "04R", rwyMed: "22L", runways: ["04R", "22L", "04L", "22R", "09", "27", "15R", "33L"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal E Gate E8", gateMed: "Terminal C Gate C22", cc: "US", countryName: "United States" },
+            { code: "MMMX", fir: "MMEX", firName: "Mexico Center", accFreq: "125.90", appFreq: "121.20", twrFreq: "118.10", gndFreq: "121.85", delFreq: "121.65", name: "Mexico City Benito Juarez", lat: 19.4363, lon: -99.0721, tz: -6, rwyHeavy: "05R", rwyMed: "23L", runways: ["05R", "23L", "05L", "23R"], taxi: "Taxiway Bravo and Echo", gateHeavy: "Terminal 2 Gate 56", gateMed: "Terminal 1 Gate 19", cc: "MX", countryName: "Mexican" },
+
             // AUSTRALIA & OCEANIA
             { code: "YSSY", fir: "YMMM", firName: "Melbourne Center", accFreq: "124.20", appFreq: "124.40", twrFreq: "120.50", gndFreq: "121.70", delFreq: "133.80", name: "Sydney Kingsford Smith", lat: -33.9399, lon: 151.1753, tz: 10, rwyHeavy: "16R", rwyMed: "34L", taxi: "Taxiway Alpha and Charlie", gateHeavy: "International Gate 53", gateMed: "Gate 32", cc: "AU", countryName: "Australian" },
             { code: "YMML", fir: "YMMM", firName: "Melbourne Center", accFreq: "124.20", appFreq: "132.00", twrFreq: "120.50", gndFreq: "121.70", delFreq: "127.20", name: "Melbourne Tullamarine", lat: -37.6690, lon: 144.8410, tz: 10, rwyHeavy: "16", rwyMed: "34", taxi: "Taxiway Alpha and Victor", gateHeavy: "Terminal 2 Gate 9", gateMed: "Terminal 1 Gate 22", cc: "AU", countryName: "Australian" },
@@ -1119,6 +1165,21 @@
             { id: "KZNY", name: "US East/Central FIR (KZNY)", firStation: "New York Center", accFreq: "125.32", cc: "US", countryName: "United States", coords: [[48.0, -95.0], [48.0, -67.0], [24.5, -67.0], [24.5, -95.0]] },
             { id: "KZLA", name: "US West FIR (KZLA)", firStation: "Los Angeles Center", accFreq: "125.80", cc: "US", countryName: "United States", coords: [[49.0, -125.5], [49.0, -95.0], [31.5, -95.0], [31.5, -125.5]] },
             { id: "CZYZ", name: "Canada FIR (CZYZ)", firStation: "Toronto Center", accFreq: "124.67", cc: "CA", countryName: "Canadian", coords: [[62.0, -135.0], [62.0, -60.0], [43.0, -60.0], [43.0, -135.0]] },
+
+            // AFRICA FIR BOUNDARIES
+            { id: "HECC", name: "Cairo FIR (HECC)", firStation: "Cairo Control", accFreq: "126.30", cc: "EG", countryName: "Egyptian", coords: [[32.5, 24.5], [32.5, 35.0], [22.0, 35.0], [22.0, 24.5]] },
+            { id: "GMMM", name: "Casablanca FIR (GMMM)", firStation: "Casablanca Control", accFreq: "125.70", cc: "MA", countryName: "Moroccan", coords: [[36.0, -13.5], [36.0, -1.5], [27.5, -1.5], [27.5, -13.5]] },
+            { id: "DAAA", name: "Algiers FIR (DAAA)", firStation: "Algiers Control", accFreq: "125.70", cc: "DZ", countryName: "Algerian", coords: [[37.5, -1.5], [37.5, 8.8], [19.5, 8.8], [19.5, -1.5]] },
+            { id: "DTTC", name: "Tunis FIR (DTTC)", firStation: "Tunis Control", accFreq: "124.70", cc: "TN", countryName: "Tunisian", coords: [[37.5, 8.8], [37.5, 12.5], [30.5, 12.5], [30.5, 8.8]] },
+            { id: "HAAA", name: "Addis Ababa FIR (HAAA)", firStation: "Addis Ababa Control", accFreq: "125.10", cc: "ET", countryName: "Ethiopian", coords: [[15.0, 33.0], [15.0, 48.0], [3.5, 48.0], [3.5, 33.0]] },
+            { id: "HKNA", name: "Nairobi FIR (HKNA)", firStation: "Nairobi Control", accFreq: "125.30", cc: "KE", countryName: "Kenyan", coords: [[4.5, 33.8], [4.5, 42.0], [-4.8, 42.0], [-4.8, 33.8]] },
+            { id: "DNKK", name: "Kano/Lagos FIR (DNKK)", firStation: "Kano/Lagos Control", accFreq: "127.30", cc: "NG", countryName: "Nigerian", coords: [[14.0, 2.5], [14.0, 14.5], [3.5, 14.5], [3.5, 2.5]] },
+            { id: "FAJA", name: "Johannesburg FIR (FAJA)", firStation: "Johannesburg Control", accFreq: "126.70", cc: "ZA", countryName: "South African", coords: [[-22.0, 16.0], [-22.0, 34.0], [-30.0, 34.0], [-30.0, 16.0]] },
+            { id: "FACA", name: "Cape Town FIR (FACA)", firStation: "Cape Town Control", accFreq: "125.10", cc: "ZA", countryName: "South African", coords: [[-30.0, 15.0], [-30.0, 30.0], [-36.5, 30.0], [-36.5, 15.0]] },
+            { id: "FIMM", name: "Mauritius FIR (FIMM)", firStation: "Mauritius Control", accFreq: "128.30", cc: "MU", countryName: "Mauritian", coords: [[-10.0, 52.0], [-10.0, 68.0], [-26.0, 68.0], [-26.0, 52.0]] },
+            { id: "LOVV", name: "Wien FIR (LOVV)", firStation: "Wien Radar", accFreq: "124.75", cc: "AT", countryName: "Austrian", coords: [[49.0, 9.5], [49.0, 17.2], [46.3, 17.2], [46.3, 9.5]] },
+            { id: "MMEX", name: "Mexico FIR (MMEX)", firStation: "Mexico Center", accFreq: "125.90", cc: "MX", countryName: "Mexican", coords: [[32.0, -115.0], [32.0, -86.5], [14.5, -86.5], [14.5, -115.0]] },
+
             { id: "YMMM", name: "Australia FIR (YMMM/YBBB)", firStation: "Melbourne Center", accFreq: "124.20", cc: "AU", countryName: "Australian", coords: [[-10.5, 112.0], [-10.5, 155.0], [-44.0, 155.0], [-44.0, 112.0]] },
             { id: "NZZC", name: "Auckland FIR (NZZC)", firStation: "Auckland Control", accFreq: "123.90", cc: "NZ", countryName: "New Zealand", coords: [[-33.0, 165.0], [-33.0, 179.0], [-47.5, 179.0], [-47.5, 165.0]] }
         ];
@@ -1606,7 +1667,18 @@
             "CA": { hello: "Good day", bye: "Safe flight" },
             "BR": { hello: "Bom dia", bye: "Obrigado" },
             "AU": { hello: "G'day", bye: "Cheers" },
-            "NZ": { hello: "Kia ora", bye: "Ka kite" }
+            "NZ": { hello: "Kia ora", bye: "Ka kite" },
+            "EG": { hello: "Assalamu alaikum", bye: "Ma'a salama" },
+            "ZA": { hello: "Howzit", bye: "Cheers" },
+            "ET": { hello: "Selam", bye: "Dehna hun" },
+            "MA": { hello: "Assalamu alaikum", bye: "Bslama" },
+            "KE": { hello: "Jambo", bye: "Kwaheri" },
+            "NG": { hello: "Good day", bye: "Safe journey" },
+            "DZ": { hello: "Assalamu alaikum", bye: "Bslama" },
+            "TN": { hello: "Assalamu alaikum", bye: "Bslama" },
+            "MU": { hello: "Bonjour", bye: "Au revoir" },
+            "AT": { hello: "Gruss Gott", bye: "Auf Wiedersehen" },
+            "MX": { hello: "Buenos dias", bye: "Buen vuelo" }
         };
 
         function getLocalGreeting(cc, type = "hello") {
@@ -1647,7 +1719,18 @@
                 "CA": { accentLang: "en-US", gender: "female", pitch: 1.02, rate: 0.99 },
                 "BR": { accentLang: "en-US", gender: "male",   pitch: 0.96, rate: 0.97 },
                 "AU": { accentLang: "en-AU", gender: "female", pitch: 1.02, rate: 0.99 },
-                "NZ": { accentLang: "en-AU", gender: "male",   pitch: 0.96, rate: 0.99 }
+                "NZ": { accentLang: "en-AU", gender: "male",   pitch: 0.96, rate: 0.99 },
+                "EG": { accentLang: "en-GB", gender: "male",   pitch: 0.96, rate: 0.97 },
+                "ZA": { accentLang: "en-ZA", gender: "female", pitch: 1.02, rate: 0.98 },
+                "ET": { accentLang: "en-GB", gender: "male",   pitch: 0.96, rate: 0.97 },
+                "MA": { accentLang: "en-GB", gender: "female", pitch: 1.02, rate: 0.98 },
+                "KE": { accentLang: "en-KE", gender: "male",   pitch: 0.96, rate: 0.97 },
+                "NG": { accentLang: "en-NG", gender: "male",   pitch: 0.96, rate: 0.97 },
+                "DZ": { accentLang: "en-GB", gender: "male",   pitch: 0.96, rate: 0.97 },
+                "TN": { accentLang: "en-GB", gender: "female", pitch: 1.02, rate: 0.98 },
+                "MU": { accentLang: "en-GB", gender: "female", pitch: 1.02, rate: 0.98 },
+                "AT": { accentLang: "en-GB", gender: "female", pitch: 1.02, rate: 0.98 },
+                "MX": { accentLang: "en-US", gender: "male",   pitch: 0.96, rate: 0.98 }
             };
             return profiles[countryCode] || { accentLang: "en-GB", gender: "male", pitch: 0.98, rate: 0.98 };
         }
@@ -1664,8 +1747,9 @@
             "MEA": "Cedar Jet", "MSR": "Egyptair", "ETH": "Ethiopian", "RAM": "Royalair Maroc",
             "SAA": "Springbok", "KQA": "Kenya", "ELY": "Elal",
 
-            // Indonesia & Southeast Asia (Aerofly FS 4 & Regional)
-            "GIA": "Garuda", "CTV": "Citilink", "LNI": "Lion Inter", "BTK": "Batik",
+            // Indonesia & Southeast Asia (Aerofly FS 4 & Regional - Official ICAO Telephony)
+            "GIA": "Indonesia", "CTV": "Citilink", "LNI": "Lion Inter", "BTK": "Batik",
+            "TGW": "Scooter", "JSA": "Jetstar Asia", "LDM": "Lauda Motion",
             "AWQ": "Wagon Air", "SJY": "Sriwijaya", "NAM": "Nam Air", "PAS": "Mandala",
             "WON": "Wings Abadi", "SIA": "Singapore", "SLK": "Silkair", "SCO": "Scooter",
             "MAS": "Malaysian", "AXM": "Asian Express", "XAX": "Xanadu", "MXD": "Malindo",
@@ -1928,10 +2012,86 @@
             return { code: type, isHeavy: heavyTypes.includes(type) };
         }
 
+        function sanitizeCustomRunway(val) {
+            if (!val) return "";
+            return val.trim().toUpperCase().replace(/^RWY\s*/i, '').replace(/^RUNWAY\s*/i, '').replace(/[^0-9LRC]/g, '');
+        }
+
+        function getAirportRunwayOptions(airport) {
+            if (!airport) return [];
+            const rwys = new Set(Array.isArray(airport.runways) ? airport.runways : [airport.rwyHeavy, airport.rwyMed]);
+            if (airport.rwyHeavy) rwys.add(airport.rwyHeavy);
+            if (airport.rwyMed) rwys.add(airport.rwyMed);
+            if (airport.rwyHeavy && airport.rwyHeavy.endsWith('R')) rwys.add(airport.rwyHeavy.replace('R', 'L'));
+            else if (airport.rwyHeavy && airport.rwyHeavy.endsWith('L')) rwys.add(airport.rwyHeavy.replace('L', 'R'));
+            if (airport.rwyMed && airport.rwyMed.endsWith('R')) rwys.add(airport.rwyMed.replace('R', 'L'));
+            else if (airport.rwyMed && airport.rwyMed.endsWith('L')) rwys.add(airport.rwyMed.replace('L', 'R'));
+            return Array.from(rwys);
+        }
+
+        function refreshRunwayDatalists() {
+            const orig = parseAirportFromInput(document.getElementById('fp-origin').value, null);
+            const dest = parseAirportFromInput(document.getElementById('fp-dest').value, null);
+
+            const depList = document.getElementById('dep-rwy-datalist');
+            const arrList = document.getElementById('arr-rwy-datalist');
+            const depInput = document.getElementById('fp-dep-rwy');
+            const arrInput = document.getElementById('fp-arr-rwy');
+
+            if (depList) {
+                depList.innerHTML = "";
+                if (orig) {
+                    const opts = getAirportRunwayOptions(orig);
+                    opts.forEach(r => { depList.innerHTML += `<option value="${r}">`; });
+                    if (depInput && !depInput.value.trim()) {
+                        const spec = getAircraftSpec();
+                        depInput.placeholder = spec.isHeavy ? orig.rwyHeavy : orig.rwyMed;
+                    }
+                } else if (depInput) {
+                    depInput.placeholder = "AUTO";
+                }
+            }
+
+            if (arrList) {
+                arrList.innerHTML = "";
+                if (dest) {
+                    const opts = getAirportRunwayOptions(dest);
+                    opts.forEach(r => { arrList.innerHTML += `<option value="${r}">`; });
+                    if (arrInput && !arrInput.value.trim()) {
+                        const spec = getAircraftSpec();
+                        arrInput.placeholder = spec.isHeavy ? dest.rwyHeavy : dest.rwyMed;
+                    }
+                } else if (arrInput) {
+                    arrInput.placeholder = "AUTO";
+                }
+            }
+        }
+
+        function onManualRunwayChanged() {
+            const depInput = document.getElementById('fp-dep-rwy');
+            const arrInput = document.getElementById('fp-arr-rwy');
+            if (depInput) depInput.value = sanitizeCustomRunway(depInput.value);
+            if (arrInput) arrInput.value = sanitizeCustomRunway(arrInput.value);
+            if (hasActiveFlightPlan) {
+                suggestNextCoPilotStep();
+            }
+        }
+
         function getAssignedRunwayAndGate(airport) {
             const spec = getAircraftSpec();
+            let chosenRwy = spec.isHeavy ? airport.rwyHeavy : airport.rwyMed;
+
+            const customDep = sanitizeCustomRunway(document.getElementById('fp-dep-rwy') ? document.getElementById('fp-dep-rwy').value : "");
+            const customArr = sanitizeCustomRunway(document.getElementById('fp-arr-rwy') ? document.getElementById('fp-arr-rwy').value : "");
+
+            if (originAirport && airport.code === originAirport.code && customDep) {
+                chosenRwy = customDep;
+            } else if (destAirport && airport.code === destAirport.code && customArr) {
+                chosenRwy = customArr;
+            }
+
             return {
-                rwy: spec.isHeavy ? airport.rwyHeavy : airport.rwyMed,
+                rwy: chosenRwy,
                 gate: spec.isHeavy ? airport.gateHeavy : airport.gateMed,
                 spec: spec
             };
@@ -2003,15 +2163,7 @@
             };
         }
 
-        function getAirportRunwayOptions(airport) {
-            const activeRwy = getAssignedRunwayAndGate(airport).rwy;
-            const rwys = new Set([activeRwy, airport.rwyHeavy, airport.rwyMed]);
-            if (airport.rwyHeavy.endsWith('R')) rwys.add(airport.rwyHeavy.replace('R', 'L'));
-            else if (airport.rwyHeavy.endsWith('L')) rwys.add(airport.rwyHeavy.replace('L', 'R'));
-            if (airport.rwyMed.endsWith('R')) rwys.add(airport.rwyMed.replace('R', 'L'));
-            else if (airport.rwyMed.endsWith('L')) rwys.add(airport.rwyMed.replace('L', 'R'));
-            return Array.from(rwys);
-        }
+
 
         function toggleIlsSelector() {
             const bar = document.getElementById('ils-selector-bar');
@@ -2031,7 +2183,7 @@
             titleEl.innerText = `📡 PILIH RUNWAY ${targetAp.code} (ACTIVE: RWY ${activeRwy}):`;
             listEl.innerHTML = "";
 
-            const options = getAirportRunwayOptions(targetAp);
+            const options = Array.from(new Set([activeRwy, ...getAirportRunwayOptions(targetAp)]));
             options.forEach(rwy => {
                 const b = document.createElement('button');
                 b.className = 'btn-mini';
@@ -2346,6 +2498,7 @@
 
             document.getElementById('fp-origin').value = `${originAirport.code} - ${originAirport.name}`;
             document.getElementById('fp-dest').value = `${destAirport.code} - ${destAirport.name}`;
+            refreshRunwayDatalists();
 
             if (map && map.getSource('route-src')) {
                 map.getSource('route-src').setData({
@@ -3003,17 +3156,17 @@
             if (welcomeMsg) {
                 if (appLang === 'en') {
                     welcomeMsg.innerHTML = `
-                        <span class="msg-sys-title">🌍 [ATC SYSTEM V7.2 — FULL AEROFLY FS 4 FLEET, LIVERY VOICE &amp; REALISTIC FIR]</span>
-                        • <strong>Player-First Flight Setup:</strong> Route, Aircraft (complete Aerofly FS 4 fleet), and Callsign/Livery start empty so you choose your own flight before ATC responds.<br>
-                        • <strong>Fixed Regional Controller Gender &amp; Airline Telephony:</strong> Consistent female/male controller voices per country/FIR (e.g., NL Female, ID Male, JP Female) and full Aerofly FS 4 livery pronunciation (<code>UEA</code> / <code>UAE</code> ➔ <em>Emirates</em>).<br>
-                        • <strong>Airborne-Only FIR Handoff &amp; Auto Landing Clearance:</strong> FIR border handoffs trigger only while airborne across boundaries, with automatic Tower landing clearance and synced ILS/ATIS runways.
+                        <span class="msg-sys-title">🌍 [ATC SYSTEM V7.3 — GLOBAL CODE F / A380 HUBS, AFRICA FIRS &amp; RUNWAY LOCK]</span>
+                        • <strong>Global Code F / A380 &amp; Regional Hubs (incl. Africa):</strong> Expanded with major African hubs (Cairo, Johannesburg, Addis Ababa, Casablanca, Nairobi, Lagos, Algiers, Tunis, Cape Town, Mauritius) and global A380 airports.<br>
+                        • <strong>Custom Departure &amp; Arrival Runway Lock:</strong> Choose from dropdown or type any custom runway (<code>DEP RWY</code> / <code>ARR RWY</code>) to lock Takeoff, Approach, Landing Clearance, ATIS, and ILS data.<br>
+                        • <strong>Complete Aerofly FS 4 Livery Telephony:</strong> Accurate ICAO/FS4 callsign pronunciation including <code>LNI</code> ➔ <em>Lion Inter</em>, <code>GIA</code> ➔ <em>Indonesia</em>, <code>UEA</code>/<code>UAE</code> ➔ <em>Emirates</em>, plus regional gender-locked voices.
                     `;
                 } else {
                     welcomeMsg.innerHTML = `
-                        <span class="msg-sys-title">🌍 [SISTEM ATC V7.2 — ARMADA LENGKAP AEROFLY FS 4, SUARA LIVERY &amp; FIR REALISTIS]</span>
-                        • <strong>Setup Penerbangan Bebas oleh Pemain:</strong> Rute, Pesawat (armada lengkap Aerofly FS 4), dan Callsign/Livery dikosongkan di awal agar Anda sendiri yang memilih sebelum ATC merespons.<br>
-                        • <strong>Kunci Gender Suara ATC per Negara &amp; Telephony Livery FS4:</strong> Suara perempuan/laki-laki konsisten per negara/FIR (misal Belanda Perempuan, Indonesia Laki-laki, Jepang Perempuan) serta pengucapan livery lengkap (<code>UEA</code> / <code>UAE</code> ➔ <em>Emirates</em>).<br>
-                        • <strong>FIR Handoff Khusus Mengudara &amp; Izin Landing Otomatis:</strong> Handoff batas FIR hanya muncul saat pesawat sudah terbang melintasi batas, dilengkapi izin mendarat otomatis dan runway ILS/ATIS yang sinkron.
+                        <span class="msg-sys-title">🌍 [SISTEM ATC V7.3 — BANDARA CODE F / A380 GLOBAL, FIR AFRIKA &amp; KUNCI RUNWAY]</span>
+                        • <strong>Ekspansi Hub Global Code F / A380 &amp; Afrika:</strong> Ditambah bandara utama Afrika (Kairo, Johannesburg, Addis Ababa, Casablanca, Nairobi, Lagos, Aljir, Tunis, Cape Town, Mauritius) serta hub A380 dunia.<br>
+                        • <strong>Pemilih &amp; Input Bebas Runway (DEP RWY / ARR RWY):</strong> Pilih dari daftar atau ketik langsung nomor runway untuk mengunci instruksi Takeoff, Approach, Landing Clearance, ATIS, dan ILS.<br>
+                        • <strong>Kamus Telephony Lengkap Aerofly FS 4:</strong> Pengucapan callsign maskapai akurat termasuk <code>LNI</code> ➔ <em>Lion Inter</em>, <code>GIA</code> ➔ <em>Indonesia</em>, <code>UEA</code>/<code>UAE</code> ➔ <em>Emirates</em>, dengan gender suara terkunci per negara.
                     `;
                 }
             }
