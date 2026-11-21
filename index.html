@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Globe ATM // Pure Natural ICAO ATC V7.3</title>
+    <title>3D Globe ATM // Pure Natural ICAO ATC V7.4</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link id="maplibre-css" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"
@@ -130,9 +130,8 @@
             color: var(--accent-yellow);
         }
 
-
         .runway-select-input {
-            width: 82px;
+            width: 92px;
             background: var(--bg-dark);
             border: 1px solid var(--accent-amber);
             color: var(--accent-yellow);
@@ -265,6 +264,16 @@
         .atm-row label {
             font-size: 0.66rem;
             color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .rwy-badge-hint {
+            font-size: 0.63rem;
+            color: var(--accent-cyan);
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            padding: 2px 6px;
+            border-radius: 4px;
             white-space: nowrap;
         }
 
@@ -603,7 +612,7 @@
 <body>
 
     <header>
-        <div class="brand">🌍 3D GLOBE ATM // PURE ICAO ATC V7.3</div>
+        <div class="brand">🌍 3D GLOBE ATM // PURE NATURAL ICAO ATC V7.4</div>
         <div class="header-controls">
             <button class="lang-toggle-btn" id="btn-lang-toggle" onclick="toggleAppLanguage()" title="Switch UI & ATC Voice Language (EN / ID) — ICAO codes protected">🌐 LANG: EN</button>
             <div class="clock-box" id="dynamic-clock" title="Aviation Zulu (UTC) & Local Time // UTC Offset">🕒 00:00:00Z // LOC WADD 00:00</div>
@@ -693,9 +702,10 @@
                 </div>
                 <div class="atm-row">
                     <label>DEP RWY:</label>
-                    <input list="dep-rwy-datalist" id="fp-dep-rwy" class="runway-select-input" value="" placeholder="AUTO" onfocus="this.select()" onchange="onManualRunwayChanged()" title="Pilih atau ketik bebas Runway Take-Off (cth: 09, 27, 07R)">
+                    <input list="dep-rwy-datalist" id="fp-dep-rwy" class="runway-select-input" value="" placeholder="AUTO" onfocus="this.select()" onchange="onManualRunwayChanged()" oninput="onManualRunwayChanged()" title="Pilih dari daftar atau ketik bebas Runway Take-Off (cth: 09, 27, 07R, 32R)">
                     <label>ARR RWY:</label>
-                    <input list="arr-rwy-datalist" id="fp-arr-rwy" class="runway-select-input" value="" placeholder="AUTO" onfocus="this.select()" onchange="onManualRunwayChanged()" title="Pilih atau ketik bebas Runway Landing (mengunci Approach, ILS & ATIS)">
+                    <input list="arr-rwy-datalist" id="fp-arr-rwy" class="runway-select-input" value="" placeholder="AUTO" onfocus="this.select()" onchange="onManualRunwayChanged()" oninput="onManualRunwayChanged()" title="Pilih dari daftar atau ketik bebas Runway Landing (cth: 32R, 14L, 18R — mengunci Approach, ILS & ATIS)">
+                    <span class="rwy-badge-hint" id="arr-rwy-status-badge">EDITABLE / CUSTOM RWY</span>
                     <datalist id="dep-rwy-datalist"></datalist>
                     <datalist id="arr-rwy-datalist"></datalist>
                 </div>
@@ -744,10 +754,10 @@
 
             <div class="radio-log" id="radio-log">
                 <div class="msg-atc" id="welcome-sys-msg">
-                    <span class="msg-sys-title">🌍 [ATC SYSTEM V7.2 — FULL AEROFLY FS 4 FLEET, LIVERY VOICE &amp; REALISTIC FIR]</span>
-                    • <strong>Player-First Flight Setup:</strong> Route, Aircraft (complete Aerofly FS 4 fleet), and Callsign/Livery start empty so you choose your own flight before ATC responds.<br>
-                    • <strong>Fixed Regional Controller Gender &amp; Airline Telephony:</strong> Consistent female/male controller voices per country/FIR (e.g., NL Female, ID Male, JP Female) and full Aerofly FS 4 livery pronunciation (<code>UEA</code> / <code>UAE</code> ➔ <em>Emirates</em>).<br>
-                    • <strong>Airborne-Only FIR Handoff &amp; Auto Landing Clearance:</strong> FIR border handoffs trigger only while airborne across boundaries, with automatic Tower landing clearance and synced ILS/ATIS runways.
+                    <span class="msg-sys-title">🌍 [ATC SYSTEM V7.4 — FULL LEMD 8 RUNWAYS, EDITABLE RWY INPUT &amp; ILS SYNC]</span>
+                    • <strong>LEMD Madrid Barajas Complete 8 Runways &amp; ILS:</strong> Includes <code>14L</code>, <code>14R</code> (Non-ILS), <code>18L</code> (111.50 MHz), <code>18R</code> (110.70 MHz), <code>32L</code> (109.90 MHz), <code>32R</code> (109.10 MHz), <code>36L</code>, and <code>36R</code> (Non-ILS).<br>
+                    • <strong>Editable / Custom Runway Input:</strong> <code>DEP RWY</code> &amp; <code>ARR RWY</code> use <code>&lt;input list="..."&gt;</code> so you can pick from suggestions or type any custom runway (such as <code>32R</code>) directly without waiting for a database update.<br>
+                    • <strong>Complete Aerofly FS 4 Livery Telephony:</strong> Accurate ICAO/FS4 callsign pronunciation including <code>LNI</code> ➔ <em>Lion Inter</em>, <code>GIA</code> ➔ <em>Indonesia</em>, <code>UEA</code>/<code>UAE</code> ➔ <em>Emirates</em>, plus regional gender-locked voices.
                 </div>
             </div>
 
@@ -1045,7 +1055,7 @@
         }
 
         // ==========================================
-        // 1. DATABASE 50 BANDARA HUB DUNIA
+        // 1. DATABASE BANDARA HUB DUNIA + DETAIL RUNWAY & ILS
         // ==========================================
         const worldAirports = [
             // INDONESIA & ASEAN
@@ -1088,7 +1098,23 @@
             { code: "EDDM", fir: "EDMM", firName: "Munich Radar", accFreq: "124.05", appFreq: "120.77", twrFreq: "118.70", gndFreq: "121.72", delFreq: "121.92", name: "Munich Airport", lat: 48.3537, lon: 11.7750, tz: 1, rwyHeavy: "08R", rwyMed: "26L", taxi: "Taxiway Charlie and Delta", gateHeavy: "Terminal 2 Gate H18", gateMed: "Terminal 1 Gate B12", cc: "DE", countryName: "German" },
             { code: "LSZH", fir: "LSAZ", firName: "Zurich Radar", accFreq: "128.05", appFreq: "118.00", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.75", name: "Zurich Kloten", lat: 47.4582, lon: 8.5555, tz: 1, rwyHeavy: "16", rwyMed: "34", taxi: "Taxiway Echo and Foxtrot", gateHeavy: "Dock E Gate E46", gateMed: "Dock A Gate A62", cc: "CH", countryName: "Swiss" },
             { code: "LIRF", fir: "LIRR", firName: "Roma Radar", accFreq: "124.20", appFreq: "119.20", twrFreq: "118.70", gndFreq: "121.90", delFreq: "121.72", name: "Rome Fiumicino", lat: 41.8003, lon: 12.2389, tz: 1, rwyHeavy: "16R", rwyMed: "34L", taxi: "Taxiway Bravo and Charlie", gateHeavy: "Terminal 3 Gate E34", gateMed: "Terminal 1 Gate B18", cc: "IT", countryName: "Italian" },
-            { code: "LEMD", fir: "LECM", firName: "Madrid Control", accFreq: "127.10", appFreq: "118.40", twrFreq: "118.15", gndFreq: "121.85", delFreq: "121.65", name: "Madrid Barajas", lat: 40.4983, lon: -3.5676, tz: 1, rwyHeavy: "18R", rwyMed: "36L", taxi: "Taxiway Mike and November", gateHeavy: "Terminal 4S Gate S24", gateMed: "Terminal 4 Gate H14", cc: "ES", countryName: "Spanish" },
+            {
+                code: "LEMD", fir: "LECM", firName: "Madrid Control", accFreq: "127.10", appFreq: "118.40", twrFreq: "118.15", gndFreq: "121.85", delFreq: "121.65",
+                name: "Madrid Barajas", lat: 40.4983, lon: -3.5676, tz: 1,
+                rwyHeavy: "32R", rwyMed: "14L",
+                runways: ["14L", "14R", "18L", "18R", "32L", "32R", "36L", "36R"],
+                runwayDetails: {
+                    "14L": { heading: 145, lengthM: 3500, ilsFreq: null, course: "145" },
+                    "14R": { heading: 145, lengthM: 3988, ilsFreq: null, course: "145" },
+                    "18L": { heading: 183, lengthM: 3500, ilsFreq: "111.50", course: "183" },
+                    "18R": { heading: 183, lengthM: 4179, ilsFreq: "110.70", course: "183" },
+                    "32L": { heading: 325, lengthM: 3988, ilsFreq: "109.90", course: "325" },
+                    "32R": { heading: 325, lengthM: 3500, ilsFreq: "109.10", course: "325" },
+                    "36L": { heading: 3,   lengthM: 4179, ilsFreq: null, course: "003" },
+                    "36R": { heading: 3,   lengthM: 3500, ilsFreq: null, course: "003" }
+                },
+                taxi: "Taxiway Mike and November", gateHeavy: "Terminal 4S Gate S24", gateMed: "Terminal 4 Gate H14", cc: "ES", countryName: "Spanish"
+            },
             { code: "EKCH", fir: "EKDK", firName: "Copenhagen Control", accFreq: "124.97", appFreq: "119.80", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.62", name: "Copenhagen Kastrup", lat: 55.6180, lon: 12.6508, tz: 1, rwyHeavy: "04R", rwyMed: "22L", taxi: "Taxiway Alpha and Bravo", gateHeavy: "Pier C Gate C32", gateMed: "Pier B Gate B12", cc: "DK", countryName: "Danish" },
 
             // NORTH & SOUTH AMERICA
@@ -1102,7 +1128,6 @@
             { code: "CYYZ", fir: "CZYZ", firName: "Toronto Center", accFreq: "124.67", appFreq: "132.80", twrFreq: "118.70", gndFreq: "121.90", delFreq: "121.30", name: "Toronto Pearson", lat: 43.6777, lon: -79.6248, tz: -5, rwyHeavy: "05", rwyMed: "23", taxi: "Taxiway Hotel and Juliet", gateHeavy: "Terminal 1 Gate E75", gateMed: "Terminal 3 Gate B22", cc: "CA", countryName: "Canadian" },
             { code: "CYVR", fir: "CZVR", firName: "Vancouver Center", accFreq: "125.10", appFreq: "128.17", twrFreq: "118.70", gndFreq: "121.70", delFreq: "121.40", name: "Vancouver Intl", lat: 49.1967, lon: -123.1815, tz: -8, rwyHeavy: "08R", rwyMed: "26L", taxi: "Taxiway Alpha and Charlie", gateHeavy: "International Gate D64", gateMed: "Domestic Gate C32", cc: "CA", countryName: "Canadian" },
             { code: "SBGR", fir: "SBBS", firName: "Brasilia Center", accFreq: "125.05", appFreq: "119.80", twrFreq: "118.40", gndFreq: "121.90", delFreq: "121.70", name: "Sao Paulo Guarulhos", lat: -23.4356, lon: -46.4731, tz: -3, rwyHeavy: "09L", rwyMed: "27R", taxi: "Taxiway Alpha and Echo", gateHeavy: "Terminal 3 Gate 305", gateMed: "Terminal 2 Gate 214", cc: "BR", countryName: "Brazilian" },
-
 
             // AFRICA HUBS & CODE F / A380 AIRPORTS
             { code: "HECA", fir: "HECC", firName: "Cairo Control", accFreq: "126.30", appFreq: "119.30", twrFreq: "118.10", gndFreq: "121.90", delFreq: "121.70", name: "Cairo Intl", lat: 30.1114, lon: 31.4139, tz: 2, rwyHeavy: "05C", rwyMed: "23C", runways: ["05L", "23R", "05C", "23C", "05R", "23L"], taxi: "Taxiway Alpha and Bravo", gateHeavy: "Terminal 3 Gate G4", gateMed: "Terminal 2 Gate E8", cc: "EG", countryName: "Egyptian" },
@@ -1687,8 +1712,6 @@
             return entry[type] || "Good day";
         }
 
-        // Fixed deterministic gender mapping per country/FIR (never randomized per station!)
-        // e.g., NL = female, ID = male, JP = female, AE = female, GB = male, DE = male, FR = female, US = male, SG = female, AU = female, etc.
         function getRegionalVoiceProfile(countryCode) {
             const profiles = {
                 "ID": { accentLang: "en-SG", gender: "male",   pitch: 0.96, rate: 0.97 },
@@ -1739,7 +1762,6 @@
         // 6. KAMUS TELEPHONY LIVERY AEROFLY FS 4 & KONVERSI TEKS RADIO VHF
         // ==========================================
         const airlineTelephonyMap = {
-            // Aerofly FS 4 Popular & Custom Aliases (termasuk UEA & UAE -> Emirates)
             "UAE": "Emirates", "UEA": "Emirates", "EMR": "Emirates",
             "ETD": "Etihad", "EYD": "Etihad",
             "QTR": "Qatari", "SVA": "Saudia", "FDB": "Sky Dubai", "ABY": "Arabia",
@@ -1747,7 +1769,6 @@
             "MEA": "Cedar Jet", "MSR": "Egyptair", "ETH": "Ethiopian", "RAM": "Royalair Maroc",
             "SAA": "Springbok", "KQA": "Kenya", "ELY": "Elal",
 
-            // Indonesia & Southeast Asia (Aerofly FS 4 & Regional - Official ICAO Telephony)
             "GIA": "Indonesia", "CTV": "Citilink", "LNI": "Lion Inter", "BTK": "Batik",
             "TGW": "Scooter", "JSA": "Jetstar Asia", "LDM": "Lauda Motion",
             "AWQ": "Wagon Air", "SJY": "Sriwijaya", "NAM": "Nam Air", "PAS": "Mandala",
@@ -1757,7 +1778,6 @@
             "HVN": "Vietnam Airlines", "VJC": "Vietjetair", "BAV": "Bamboo",
             "PAL": "Philippine", "CEB": "Cebu Air", "APG": "Airphil", "RBA": "Brunei",
 
-            // East & South Asia (Aerofly FS 4 Liveries)
             "JAL": "Japan Air", "ANA": "All Nippon", "SKY": "Skymark", "APJ": "Air Peach",
             "JJP": "Orange Liner", "KAL": "Korean Air", "AAR": "Asiana", "JJA": "Jeju Air",
             "TWB": "Tway Air", "JNA": "Jin Air", "CPA": "Cathay", "CRK": "Bauhinia",
@@ -1767,7 +1787,6 @@
             "AIC": "Air India", "IGO": "Ifly", "VTI": "Vistara", "SEJ": "Spicejet",
             "ALK": "Srilankan", "PIA": "Pakistan",
 
-            // Europe (Aerofly FS 4 Liveries)
             "BAW": "Speedbird", "VIR": "Virgin", "EZY": "Easy", "EXS": "Channex",
             "TOM": "Tomjet", "LOG": "Logan", "BE": "Jersey", "BEE": "Jersey",
             "AFR": "Airfrans", "TVF": "France Soleil",
@@ -1782,7 +1801,6 @@
             "THY": "Turkish", "PGT": "Sunturk", "SXS": "Sunexpress", "AEE": "Aegean",
             "AFL": "Aeroflot", "SBI": "Siberian",
 
-            // North & South America (Aerofly FS 4 Liveries)
             "AAL": "American", "UAL": "United", "DAL": "Delta", "SWA": "Southwest",
             "JBU": "Jetblue", "ASA": "Alaska", "NKS": "Spirit Wings", "FFT": "Frontier Flight",
             "HAL": "Hawaiian", "FDX": "Fedex", "UPS": "UPS", "GTI": "Giant",
@@ -1792,11 +1810,9 @@
             "LAN": "Lan Chile", "TAM": "Tam", "AZU": "Azul", "GLO": "Gol Transporte",
             "ARG": "Argentina",
 
-            // Australia & Oceania (Aerofly FS 4 Liveries)
             "QFA": "Qantas", "JST": "Jetstar", "VOZ": "Velocity", "RXA": "Rex",
             "ANZ": "New Zealand", "FJI": "Fiji", "ANG": "Niugini",
 
-            // Military & Special FS4 Callsigns
             "NAVY": "Navy", "ARMY": "Army", "VPR": "Viper", "HGL": "Eagle", "HRN": "Hornet", "RCH": "Reach"
         };
 
@@ -1892,7 +1908,6 @@
                 t = t.replace(new RegExp(`\\b${escapedCs}\\b`, 'gi'), spokenCs);
             }
 
-            // Convert any standalone airline code + number (e.g., UEA211, UAE211, GIA405) before TTS speaks it
             t = t.replace(/\b([A-Z]{2,4})(\d+)\b/g, (full, prefix, digits) => {
                 if (airlineTelephonyMap[prefix]) {
                     return `${airlineTelephonyMap[prefix]} ${spellDigitsVHF(digits)}`;
@@ -2037,6 +2052,7 @@
             const arrList = document.getElementById('arr-rwy-datalist');
             const depInput = document.getElementById('fp-dep-rwy');
             const arrInput = document.getElementById('fp-arr-rwy');
+            const badgeEl = document.getElementById('arr-rwy-status-badge');
 
             if (depList) {
                 depList.innerHTML = "";
@@ -2065,13 +2081,34 @@
                     arrInput.placeholder = "AUTO";
                 }
             }
+
+            if (badgeEl) {
+                const customArr = sanitizeCustomRunway(arrInput ? arrInput.value : "");
+                if (customArr && dest) {
+                    const ilsInfo = getRunwayIlsData(dest, customArr);
+                    badgeEl.innerText = ilsInfo.hasIls
+                        ? `RWY ${customArr} • ILS ${ilsInfo.freq}`
+                        : `RWY ${customArr} • NON-ILS`;
+                } else if (dest) {
+                    badgeEl.innerText = `${dest.code}: ${getAirportRunwayOptions(dest).length} RWY (CUSTOM OK)`;
+                } else {
+                    badgeEl.innerText = "EDITABLE / CUSTOM RWY";
+                }
+            }
         }
 
         function onManualRunwayChanged() {
             const depInput = document.getElementById('fp-dep-rwy');
             const arrInput = document.getElementById('fp-arr-rwy');
-            if (depInput) depInput.value = sanitizeCustomRunway(depInput.value);
-            if (arrInput) arrInput.value = sanitizeCustomRunway(arrInput.value);
+            if (depInput) {
+                const cleanDep = sanitizeCustomRunway(depInput.value);
+                if (depInput.value !== cleanDep) depInput.value = cleanDep;
+            }
+            if (arrInput) {
+                const cleanArr = sanitizeCustomRunway(arrInput.value);
+                if (arrInput.value !== cleanArr) arrInput.value = cleanArr;
+            }
+            refreshRunwayDatalists();
             if (hasActiveFlightPlan) {
                 suggestNextCoPilotStep();
             }
@@ -2140,11 +2177,24 @@
         }
 
         // ==========================================
-        // ILS DATABASE & 2-STEP BRIEFING SYSTEM (SYNCED WITH ACTIVE DEST RUNWAY)
+        // ILS DATABASE & 2-STEP BRIEFING SYSTEM (SYNCED WITH ACTIVE DEST RUNWAY & EXACT AIRPORT DATA)
         // ==========================================
         function getRunwayIlsData(airport, rwyCode) {
             const assign = getAssignedRunwayAndGate(airport);
-            const cleanRwy = (rwyCode || assign.rwy).toUpperCase();
+            const cleanRwy = sanitizeCustomRunway(rwyCode || assign.rwy) || assign.rwy;
+            const detail = airport && airport.runwayDetails ? airport.runwayDetails[cleanRwy] : null;
+
+            if (detail) {
+                return {
+                    rwy: cleanRwy,
+                    freq: detail.ilsFreq || null,
+                    hasIls: Boolean(detail.ilsFreq),
+                    course: detail.course || String(detail.heading).padStart(3, '0'),
+                    lengthM: detail.lengthM || null,
+                    gsAlt: "3,000 feet"
+                };
+            }
+
             const headingBase = parseInt(cleanRwy.replace(/[LRC]/g, ''), 10) || 9;
             const course = String(((headingBase * 10) % 360) || 360).padStart(3, '0');
 
@@ -2158,12 +2208,12 @@
             return {
                 rwy: cleanRwy,
                 freq: `${mhzWhole}.${mhzDec}`,
+                hasIls: true,
                 course: course,
+                lengthM: null,
                 gsAlt: "3,000 feet"
             };
         }
-
-
 
         function toggleIlsSelector() {
             const bar = document.getElementById('ils-selector-bar');
@@ -2185,11 +2235,13 @@
 
             const options = Array.from(new Set([activeRwy, ...getAirportRunwayOptions(targetAp)]));
             options.forEach(rwy => {
+                const info = getRunwayIlsData(targetAp, rwy);
                 const b = document.createElement('button');
                 b.className = 'btn-mini';
-                b.style.borderColor = rwy === activeRwy ? '#10b981' : '#facc15';
-                b.style.color = rwy === activeRwy ? '#6ee7b7' : '#facc15';
-                b.innerText = rwy === activeRwy ? `RWY ${rwy} (ACTIVE)` : `RWY ${rwy}`;
+                b.style.borderColor = rwy === activeRwy ? '#10b981' : (info.hasIls ? '#facc15' : '#94a3b8');
+                b.style.color = rwy === activeRwy ? '#6ee7b7' : (info.hasIls ? '#facc15' : '#cbd5e1');
+                const tag = rwy === activeRwy ? ' (ACTIVE)' : (info.hasIls ? ` (${info.freq})` : ' (NON-ILS)');
+                b.innerText = `RWY ${rwy}${tag}`;
                 b.onclick = () => requestIlsInfoForRunway(targetAp, rwy);
                 listEl.appendChild(b);
             });
@@ -2207,7 +2259,7 @@
             closeIlsSelector();
             initAudioContext();
             const spokenCs = getSpokenCallsign();
-            const pilotQuery = `${activeStationName}, ${spokenCs}, request ILS frequency and final approach course for ${targetAp.name} Runway ${rwy}.`;
+            const pilotQuery = `${activeStationName}, ${spokenCs}, request approach and ILS data for ${targetAp.name} Runway ${rwy}.`;
 
             speechGenerationId++;
             const myGen = speechGenerationId;
@@ -2239,12 +2291,17 @@
             const distToTarget = Math.round(getDistanceNM(currentLat, currentLon, targetAp.lat, targetAp.lon));
             const replyStationHeader = `${activeStationName} (${activeFreq})`;
             const replyCc = activeAirportObj ? activeAirportObj.cc : (originAirport ? originAirport.cc : "ID");
+            const lenText = ils.lengthM ? `runway length ${ils.lengthM} meters, ` : "";
 
             let atcReply = "";
-            if (distToTarget > 200) {
-                atcReply = `${spokenCs}, ${activeStationName}. For your flight planning at ${targetAp.name} (${targetAp.code}), active Runway ${ils.rwy} ILS frequency is ${ils.freq} MHz, final approach course ${ils.course} degrees, glideslope intercept at ${ils.gsAlt}. Contact ${targetAp.name} Approach closer to destination for active clearance.`;
+            if (ils.hasIls) {
+                if (distToTarget > 200) {
+                    atcReply = `${spokenCs}, ${activeStationName}. For your flight planning at ${targetAp.name} (${targetAp.code}), Runway ${ils.rwy} (${lenText}course ${ils.course} degrees) has ILS frequency ${ils.freq} MHz, glideslope intercept at ${ils.gsAlt}. Contact ${targetAp.name} Approach closer to destination for active clearance.`;
+                } else {
+                    atcReply = `${spokenCs}, ${activeStationName}. Expect Runway ${ils.rwy} at ${targetAp.name} (${lenText}course ${ils.course} degrees), ILS frequency ${ils.freq} MHz, intercept glideslope at ${ils.gsAlt}.`;
+                }
             } else {
-                atcReply = `${spokenCs}, ${activeStationName}. Expect active Runway ${ils.rwy} at ${targetAp.name}, ILS frequency ${ils.freq} MHz, final approach course ${ils.course} degrees, intercept glideslope at ${ils.gsAlt}.`;
+                atcReply = `${spokenCs}, ${activeStationName}. Runway ${ils.rwy} at ${targetAp.name} (${targetAp.code}, ${lenText}course ${ils.course} degrees) is Non-ILS; plan visual or RNAV approach.`;
             }
 
             appendLog('atc', `📡 ILS BRIEFING — ${replyStationHeader}`, atcReply);
@@ -2259,9 +2316,12 @@
             const logBox = document.getElementById('radio-log');
             const div = document.createElement('div');
             div.className = 'msg-atis-card';
+            const navaidLine = ils.hasIls
+                ? `ILS <strong>${ils.freq} MHz</strong> / CRS <strong>${ils.course}°</strong>`
+                : `<strong>Non-ILS</strong> / CRS <strong>${ils.course}°</strong>`;
             div.innerHTML = `
                 <strong>📋 [DEST ATIS INFO — ${destAirport.code} (${destAirport.name})]</strong><br>
-                • <strong>Active Landing Runway:</strong> Runway ${ils.rwy} (ILS <strong>${ils.freq} MHz</strong> / CRS <strong>${ils.course}°</strong>)<br>
+                • <strong>Active Landing Runway:</strong> Runway ${ils.rwy} (${navaidLine})<br>
                 • <strong>Weather &amp; Baro:</strong> Wind 140° at 8 KT | Visibility &gt;10 KM | QNH <strong>1013 hPa</strong> | Temp 24°C
             `;
             logBox.appendChild(div);
@@ -2339,6 +2399,8 @@
             const spokenCs = getSpokenCallsign();
             const assignOrigin = getAssignedRunwayAndGate(originAirport);
             const assignDest = getAssignedRunwayAndGate(destAirport);
+            const destIls = getRunwayIlsData(destAirport, assignDest.rwy);
+            const appTypeLabel = destIls.hasIls ? "ILS" : "visual";
             const distToDest = Math.round(getDistanceNM(currentLat, currentLon, destAirport.lat, destAirport.lon));
             const tdDistNM = calculateTopOfDescentNM(currentAlt);
 
@@ -2400,9 +2462,9 @@
                 if (distToDest <= 30 && currentAlt <= 14000 && !autoLandingCleared) {
                     setSmartCoPilotAction(
                         "NEXT_ACTION",
-                        `💡 ARRIVAL: Request ILS Approach Runway ${assignDest.rwy}`,
-                        "🎙️ REQ ILS APPROACH",
-                        `${destAirport.name} Approach, ${spokenCs}, request ILS approach Runway ${assignDest.rwy}.`
+                        `💡 ARRIVAL: Request ${destIls.hasIls ? "ILS" : "Visual"} Approach Runway ${assignDest.rwy}`,
+                        `🎙️ REQ ${destIls.hasIls ? "ILS" : "APP"}`,
+                        `${destAirport.name} Approach, ${spokenCs}, request ${appTypeLabel} approach Runway ${assignDest.rwy}.`
                     );
                 } else {
                     hideSmartCoPilotBar(true);
@@ -2682,7 +2744,6 @@
             const fl = alt >= 10000 ? `FL${Math.round(alt/100)}` : `${Math.round(alt)} FT`;
             document.getElementById('ui-alt-hdg').innerText = `${fl} / ${Math.round(speed)} KT / ${String(Math.round(heading)).padStart(3, '0')}°`;
 
-            // Automatic ATM FIR detection based on position (works even before route is filed)
             const detectedFir = detectCurrentFirPolygon(lat, lon);
             const nearest = detectedFir ? findNearestAirport(lat, lon, detectedFir.cc) : findNearestAirport(lat, lon);
             const ap = nearest.airport;
@@ -2697,7 +2758,6 @@
             const firTitle = detectedFir ? detectedFir.id : ap.fir;
             document.getElementById('ui-fir').innerText = `${firTitle} // SQK ${activeSquawk}`;
 
-            // If no flight plan has been filed yet, keep ATC in standby and NEVER fire premature FIR border handoffs!
             if (!hasActiveFlightPlan || !originAirport || !destAirport) {
                 activeAirportObj = ap;
                 document.getElementById('ui-sector').innerText = `${firTitle} // ${ap.accFreq} MHz`;
@@ -2713,7 +2773,6 @@
             const tdDistNM = calculateTopOfDescentNM(alt);
             const spokenCs = getSpokenCallsign();
 
-            // Accurate flight phase transitions
             if (alt < 150 && speed > 45 && (flightPhase === "PREFLIGHT" || flightPhase === "TAXI_OUT")) {
                 flightPhase = "CLIMB";
                 groundSubStep = "AIRBORNE";
@@ -2797,7 +2856,6 @@
 
             document.getElementById('ui-sector').innerText = `${sectorAirport.code} ${currentSectorType} // ${currentFreq} MHz`;
 
-            // Automatic "Cleared to land" when established on final approach near destination
             if (
                 !autoLandingCleared &&
                 flightPhase === "APPROACH" &&
@@ -2807,6 +2865,7 @@
             ) {
                 autoLandingCleared = true;
                 const destAssign = getAssignedRunwayAndGate(destAirport);
+                const destIls = getRunwayIlsData(destAirport, destAssign.rwy);
                 const twrStation = `${destAirport.name} Tower`;
                 const twrFreq = destAirport.twrFreq;
 
@@ -2818,7 +2877,8 @@
                 lastInstructorFreq = twrFreq;
                 lastInstructorCc = destAirport.cc;
 
-                const landClearanceMsg = `${spokenCs}, ${twrStation}. Wind 140 degrees at 8 knots, QNH 1013. Runway ${destAssign.rwy} is clear, cleared to land Runway ${destAssign.rwy}.`;
+                const appSuffix = destIls.hasIls ? ` ILS ${destIls.freq} MHz` : ` visual`;
+                const landClearanceMsg = `${spokenCs}, ${twrStation}. Wind 140 degrees at 8 knots, QNH 1013. Runway ${destAssign.rwy} (${appSuffix}) is clear, cleared to land Runway ${destAssign.rwy}.`;
                 const landReadbackSample = `Cleared to land Runway ${destAssign.rwy}, ${spokenCs}.`;
 
                 appendLog('atc', `🛬 LANDING CLEARANCE — ${twrStation} (${twrFreq})`, landClearanceMsg);
@@ -2900,7 +2960,6 @@
                 lastProactiveInstructionTime = Date.now();
             }
 
-            // Anti-Spam & Cooldown Koreksi Arah (Off-Course)
             const now = Date.now();
             if (alt > 8000 && coPilotState.mode !== "READBACK" && (now - lastProactiveInstructionTime > PROACTIVE_MIN_INTERVAL_MS)) {
                 const bearingToDest = Math.round(calculateBearing(lat, lon, destAirport.lat, destAirport.lon));
@@ -2919,7 +2978,11 @@
                     lastInstructorFreq = activeFreq;
                     lastInstructorCc = sectorAirport.cc;
 
-                    atcCmd = `${spokenCs}, ${activeStationName}. Approaching Top of Descent, when ready descend and maintain Flight Level 140, expect ILS Runway ${getAssignedRunwayAndGate(destAirport).rwy} at ${destAirport.name}.`;
+                    const destRwy = getAssignedRunwayAndGate(destAirport).rwy;
+                    const destIls = getRunwayIlsData(destAirport, destRwy);
+                    const expLabel = destIls.hasIls ? `ILS Runway ${destRwy}` : `Runway ${destRwy}`;
+
+                    atcCmd = `${spokenCs}, ${activeStationName}. Approaching Top of Descent, when ready descend and maintain Flight Level 140, expect ${expLabel} at ${destAirport.name}.`;
                     rbSample = `Descending Flight Level 140, ${spokenCs}.`;
                 } else if (
                     headingDiff > OFF_COURSE_TOLERANCE_DEG &&
@@ -3029,7 +3092,6 @@
             return "unknown";
         }
 
-        // Locks ONE consistent controller voice (gender + accent) per Country/FIR so Dubai never flips from female to male mid-airport!
         function getSingleVoiceForCountry(countryCode, accentLang, desiredGender = "male") {
             if (!('speechSynthesis' in window)) return null;
             if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
@@ -3048,13 +3110,10 @@
             const target = accentLang.toLowerCase();
             const regionalPool = basePool.filter(v => v.lang.toLowerCase() === target);
 
-            // 1. Try regional + exact desired gender
             let candidates = regionalPool.filter(v => detectVoiceGender(v) === desiredGender);
-            // 2. Try any English neural/adult voice with exact desired gender
             if (candidates.length === 0) {
                 candidates = basePool.filter(v => detectVoiceGender(v) === desiredGender);
             }
-            // 3. Fallback to regional or basePool
             if (candidates.length === 0) {
                 candidates = regionalPool.length > 0 ? regionalPool : basePool;
             }
@@ -3156,16 +3215,16 @@
             if (welcomeMsg) {
                 if (appLang === 'en') {
                     welcomeMsg.innerHTML = `
-                        <span class="msg-sys-title">🌍 [ATC SYSTEM V7.3 — GLOBAL CODE F / A380 HUBS, AFRICA FIRS &amp; RUNWAY LOCK]</span>
-                        • <strong>Global Code F / A380 &amp; Regional Hubs (incl. Africa):</strong> Expanded with major African hubs (Cairo, Johannesburg, Addis Ababa, Casablanca, Nairobi, Lagos, Algiers, Tunis, Cape Town, Mauritius) and global A380 airports.<br>
-                        • <strong>Custom Departure &amp; Arrival Runway Lock:</strong> Choose from dropdown or type any custom runway (<code>DEP RWY</code> / <code>ARR RWY</code>) to lock Takeoff, Approach, Landing Clearance, ATIS, and ILS data.<br>
+                        <span class="msg-sys-title">🌍 [ATC SYSTEM V7.4 — FULL LEMD 8 RUNWAYS, EDITABLE RWY INPUT &amp; ILS SYNC]</span>
+                        • <strong>LEMD Madrid Barajas Complete 8 Runways &amp; ILS:</strong> Includes <code>14L</code>, <code>14R</code> (Non-ILS), <code>18L</code> (111.50 MHz), <code>18R</code> (110.70 MHz), <code>32L</code> (109.90 MHz), <code>32R</code> (109.10 MHz), <code>36L</code>, and <code>36R</code> (Non-ILS).<br>
+                        • <strong>Editable / Custom Runway Input:</strong> <code>DEP RWY</code> &amp; <code>ARR RWY</code> use <code>&lt;input list="..."&gt;</code> so you can pick from suggestions or type any custom runway (such as <code>32R</code>) directly without waiting for a database update.<br>
                         • <strong>Complete Aerofly FS 4 Livery Telephony:</strong> Accurate ICAO/FS4 callsign pronunciation including <code>LNI</code> ➔ <em>Lion Inter</em>, <code>GIA</code> ➔ <em>Indonesia</em>, <code>UEA</code>/<code>UAE</code> ➔ <em>Emirates</em>, plus regional gender-locked voices.
                     `;
                 } else {
                     welcomeMsg.innerHTML = `
-                        <span class="msg-sys-title">🌍 [SISTEM ATC V7.3 — BANDARA CODE F / A380 GLOBAL, FIR AFRIKA &amp; KUNCI RUNWAY]</span>
-                        • <strong>Ekspansi Hub Global Code F / A380 &amp; Afrika:</strong> Ditambah bandara utama Afrika (Kairo, Johannesburg, Addis Ababa, Casablanca, Nairobi, Lagos, Aljir, Tunis, Cape Town, Mauritius) serta hub A380 dunia.<br>
-                        • <strong>Pemilih &amp; Input Bebas Runway (DEP RWY / ARR RWY):</strong> Pilih dari daftar atau ketik langsung nomor runway untuk mengunci instruksi Takeoff, Approach, Landing Clearance, ATIS, dan ILS.<br>
+                        <span class="msg-sys-title">🌍 [SISTEM ATC V7.4 — 8 RUNWAY LEMD LENGKAP, INPUT RWY BEBAS &amp; SINKRON ILS]</span>
+                        • <strong>8 Runway &amp; ILS LEMD Madrid Barajas Lengkap:</strong> Mencakup <code>14L</code>, <code>14R</code> (Non-ILS), <code>18L</code> (111.50 MHz), <code>18R</code> (110.70 MHz), <code>32L</code> (109.90 MHz), <code>32R</code> (109.10 MHz), <code>36L</code>, dan <code>36R</code> (Non-ILS).<br>
+                        • <strong>Input Runway Editable / Bebas:</strong> <code>DEP RWY</code> &amp; <code>ARR RWY</code> memakai <code>&lt;input list="..."&gt;</code> sehingga bisa dipilih dari saran maupun diketik bebas (misal <code>32R</code>) langsung tanpa menunggu update database.<br>
                         • <strong>Kamus Telephony Lengkap Aerofly FS 4:</strong> Pengucapan callsign maskapai akurat termasuk <code>LNI</code> ➔ <em>Lion Inter</em>, <code>GIA</code> ➔ <em>Indonesia</em>, <code>UEA</code>/<code>UAE</code> ➔ <em>Emirates</em>, dengan gender suara terkunci per negara.
                     `;
                 }
@@ -3542,6 +3601,8 @@
             const contextAp = isGroundStart ? originAirport : activeAirportObj;
             const assign = getAssignedRunwayAndGate(contextAp);
             const destAssign = getAssignedRunwayAndGate(destAirport);
+            const destIls = getRunwayIlsData(destAirport, destAssign.rwy);
+            const destExpLabel = destIls.hasIls ? `ILS Runway ${destAssign.rwy}` : `Runway ${destAssign.rwy}`;
 
             let replyStationHeader = `${activeStationName} (${activeFreq})`;
             let replyCc = contextAp.cc;
@@ -3554,7 +3615,6 @@
                 return;
             }
 
-            // 1. PENANGANAN READBACK WAJIB
             if (coPilotState.mode === "READBACK" && !isDeliveryInit && (
                 msg.includes("contact") || msg.includes("heading") || msg.includes("flight level") ||
                 msg.includes("descending") || msg.includes("climbing") || msg.includes("cleared") ||
@@ -3595,7 +3655,6 @@
                 return;
             }
 
-            // 2. PERMINTAAN IZIN MASUK WILAYAH NEGARA (FIR BORDER ENTRY CLEARANCE)
             if (msg.includes("enter") || msg.includes("airspace") || msg.includes("border") || msg.includes("overflight") || (pendingBorderFir && msg.includes("requesting clearance"))) {
                 const targetFir = pendingBorderFir || {
                     firName: activeStationName,
@@ -3626,7 +3685,6 @@
                     `Cleared to enter ${targetFir.countryName} airspace, maintain ${fl}, squawk ${newSqk}, ${spokenCs}.`
                 );
             }
-            // 3. CANCEL EMERGENCY
             else if (msg.includes("cancel mayday") || msg.includes("emergency resolved") || msg.includes("operations normal")) {
                 isEmergency = false;
                 activeSquawk = "4215";
@@ -3634,7 +3692,6 @@
                 reply = `${spokenCs}, ${activeStationName}, glad to hear everything is under control. Emergency cancelled, squawk 4215 confirmed, resume normal navigation to ${destAirport.name}.`;
                 suggestNextCoPilotStep();
             }
-            // 4. MAYDAY / EMERGENCY 7700
             else if (msg.includes("mayday") || msg.includes("pan pan") || msg.includes("emergency") || msg.includes("7700")) {
                 isEmergency = true;
                 isEmgReply = true;
@@ -3642,20 +3699,21 @@
                 updateEmergencyButtonUI();
                 const nearest = findNearestAirport(currentLat, currentLon).airport;
                 const emgAssign = getAssignedRunwayAndGate(nearest);
+                const emgIls = getRunwayIlsData(nearest, emgAssign.rwy);
 
                 lastInstructorStation = activeStationName;
                 lastInstructorFreq = activeFreq;
                 lastInstructorCc = contextAp.cc;
 
-                reply = `${spokenCs}, ${activeStationName}, roger MAYDAY, we have you on squawk 7700. Fire and rescue teams are standing by at ${nearest.name}. Turn direct ${nearest.name}, descend at your discretion, you are cleared priority ILS approach Runway ${emgAssign.rwy}.`;
+                const emgApp = emgIls.hasIls ? `priority ILS approach Runway ${emgAssign.rwy}` : `priority approach Runway ${emgAssign.rwy}`;
+                reply = `${spokenCs}, ${activeStationName}, roger MAYDAY, we have you on squawk 7700. Fire and rescue teams are standing by at ${nearest.name}. Turn direct ${nearest.name}, descend at your discretion, you are cleared ${emgApp}.`;
                 setSmartCoPilotAction(
                     "READBACK",
-                    `⚠️ READBACK REQUIRED: "Direct ${nearest.code}, cleared priority ILS Runway ${emgAssign.rwy}, ${spokenCs}."`,
+                    `⚠️ READBACK REQUIRED: "Direct ${nearest.code}, cleared priority Runway ${emgAssign.rwy}, ${spokenCs}."`,
                     "🎙️ CO-PILOT READBACK",
-                    `Direct ${nearest.code}, cleared priority ILS Runway ${emgAssign.rwy}, ${spokenCs}.`
+                    `Direct ${nearest.code}, cleared priority Runway ${emgAssign.rwy}, ${spokenCs}.`
                 );
             }
-            // 5. IFR CLEARANCE
             else if (msg.includes("ifr") || msg.includes("clearance")) {
                 activeSquawk = "4215";
                 if (isGroundStart) {
@@ -3688,7 +3746,6 @@
                     );
                 }
             }
-            // 6. CHECKING IN / WITH YOU
             else if (msg.includes("checking in") || msg.includes("with you") || (msg.includes("level") && !msg.includes("descend") && !msg.includes("climb"))) {
                 pendingHandoffStation = "";
                 const distNM = Math.round(getDistanceNM(currentLat, currentLon, activeAirportObj.lat, activeAirportObj.lon));
@@ -3699,7 +3756,6 @@
                 }
                 suggestNextCoPilotStep();
             }
-            // 7. PUSHBACK & ENGINE START
             else if (msg.includes("push") || msg.includes("startup") || msg.includes("start")) {
                 flightPhase = "TAXI_OUT";
                 groundSubStep = "TAXI";
@@ -3713,7 +3769,6 @@
                 reply = `${spokenCs}, ${contextAp.name} Ground. Pushback and engine start approved from ${assign.gate}, facing east, QNH 1013. Let us know when you're ready to taxi.`;
                 suggestNextCoPilotStep();
             }
-            // 8. TAXI (OUT / IN)
             else if (msg.includes("taxi") || msg.includes("park") || msg.includes("gate")) {
                 activeStationName = `${contextAp.name} Ground`;
                 activeFreq = contextAp.gndFreq;
@@ -3741,7 +3796,6 @@
                     );
                 }
             }
-            // 9. TAKEOFF / DEPARTURE
             else if (msg.includes("takeoff") || msg.includes("take off") || msg.includes("departure") || msg.includes("ready")) {
                 if (flightPhase === "LANDED_TAXI_IN" || flightPhase === "PARKED_COMPLETE") {
                     replyStationHeader = `${contextAp.name} Ground (${contextAp.gndFreq})`;
@@ -3765,7 +3819,6 @@
                     );
                 }
             }
-            // 10. DESCEND
             else if (msg.includes("descend") || msg.includes("descent") || msg.includes("lower")) {
                 const targetFL = msg.match(/\d{2,3}/) ? msg.match(/\d{2,3}/)[0] : "140";
                 demoCruiseAlt = parseInt(targetFL, 10) * 100;
@@ -3774,7 +3827,7 @@
                 lastInstructorFreq = activeFreq;
                 lastInstructorCc = contextAp.cc;
 
-                reply = `${spokenCs}, ${activeStationName}. Approved, descend and maintain Flight Level ${targetFL}, expect ILS Runway ${destAssign.rwy} at ${destAirport.name}.`;
+                reply = `${spokenCs}, ${activeStationName}. Approved, descend and maintain Flight Level ${targetFL}, expect ${destExpLabel} at ${destAirport.name}.`;
                 setSmartCoPilotAction(
                     "READBACK",
                     `⚠️ READBACK REQUIRED: "Descending Flight Level ${targetFL}, ${spokenCs}."`,
@@ -3782,7 +3835,6 @@
                     `Descending Flight Level ${targetFL}, ${spokenCs}.`
                 );
             }
-            // 11. CLIMB
             else if (msg.includes("climb") || msg.includes("higher")) {
                 const targetFL = msg.match(/\d{2,3}/) ? msg.match(/\d{2,3}/)[0] : "350";
                 demoCruiseAlt = parseInt(targetFL, 10) * 100;
@@ -3799,7 +3851,6 @@
                     `Climbing Flight Level ${targetFL}, ${spokenCs}.`
                 );
             }
-            // 12. HEADING / VECTOR
             else if (msg.includes("heading") || msg.includes("turn") || msg.includes("vector")) {
                 const hdg = msg.match(/\d{3}/) ? msg.match(/\d{3}/)[0] : "270";
                 lastInstructorStation = activeStationName;
@@ -3814,7 +3865,6 @@
                     `Turning heading ${hdg}, ${spokenCs}.`
                 );
             }
-            // 13. SPEED
             else if (msg.includes("speed") || msg.includes("knots")) {
                 const spd = msg.match(/\d{3}/) ? msg.match(/\d{3}/)[0] : "250";
                 lastInstructorStation = activeStationName;
@@ -3829,11 +3879,9 @@
                     `Maintaining ${spd} knots, ${spokenCs}.`
                 );
             }
-            // 14. WEATHER
             else if (msg.includes("weather") || msg.includes("wind") || msg.includes("qnh") || msg.includes("metar")) {
                 reply = `${spokenCs}, latest weather at ${destAirport.name}: wind 090 degrees at 7 knots, visibility more than 10 kilometers, few clouds at 3,200 feet, temperature 28, QNH 1013.`;
             }
-            // 15. ILS APPROACH / LANDING
             else if (msg.includes("landing") || msg.includes("approach") || msg.includes("ils")) {
                 if (currentAlt > 15000) {
                     reply = `${spokenCs}, unable landing clearance while you're still at FL${Math.round(currentAlt/100)}. Request descent to Flight Level 140 first.`;
@@ -3847,7 +3895,10 @@
                     lastInstructorCc = destAirport.cc;
                     replyStationHeader = `${activeStationName} (${activeFreq})`;
 
-                    reply = `${spokenCs}, ${destAirport.name} Tower. Wind is calm, QNH 1013. Cleared ILS approach and cleared to land Runway ${destAssign.rwy}.`;
+                    const appClearText = destIls.hasIls
+                        ? `Cleared ILS ${destIls.freq} MHz approach and cleared to land Runway ${destAssign.rwy}.`
+                        : `Cleared visual approach and cleared to land Runway ${destAssign.rwy} (Non-ILS).`;
+                    reply = `${spokenCs}, ${destAirport.name} Tower. Wind is calm, QNH 1013. ${appClearText}`;
                     setSmartCoPilotAction(
                         "READBACK",
                         `⚠️ READBACK REQUIRED: "Cleared to land Runway ${destAssign.rwy}, ${spokenCs}."`,
@@ -3856,7 +3907,6 @@
                     );
                 }
             }
-            // 16. THANK YOU / SHUTDOWN
             else if (msg.includes("thank") || msg.includes("bye") || msg.includes("shutdown")) {
                 if (flightPhase === "LANDED_TAXI_IN" || flightPhase === "PARKED_COMPLETE") {
                     flightPhase = "PARKED_COMPLETE";
@@ -3867,251 +3917,219 @@
                     reply = `${spokenCs}, ${activeStationName}, you're very welcome! Continue maintaining ${currentAlt >= 10000 ? 'FL' + Math.round(currentAlt/100) : currentAlt + ' feet'}, we have you on radar enroute to ${destAirport.name}.`;
                 }
             }
-            // 17. ROGER / WILCO / COPY
             else if (msg === "copy" || msg === "roger" || msg === "wilco") {
                 reply = `${spokenCs}, ${activeStationName}, roger.`;
-                suggestNextCoPilotStep();
             }
-            // 18. RADIO CHECK OR REALISTIC ICAO "SAY AGAIN" FALLBACK
-            else if (msg.includes("radio check") || msg.includes("how do you read")) {
-                reply = `${spokenCs}, ${activeStationName}, reading you loud and clear, five by five.`;
+            else if (msg.length < 3 || ["uh", "um", "er", "ah", "huh", "what"].includes(msg)) {
+                reply = `${spokenCs}, ${activeStationName}, say again, unreadable transmission.`;
             }
             else {
-                reply = `${spokenCs}, ${activeStationName}, say again, unreadable transmission.`;
+                reply = `${spokenCs}, ${activeStationName}, reading you loud and clear, five by five. Continue navigation to ${destAirport.name} as cleared.`;
             }
 
             appendLog('atc', replyStationHeader, reply, isEmgReply, isBorderReply);
             speakSingleCountryController(replyCc, reply);
         }
 
-        function appendLog(sender, title, message, isEmergencyMsg = false, isBorderMsg = false) {
+        function requestStepClimb() {
+            if (!hasActiveFlightPlan || !originAirport || !destAirport) {
+                alert(appLang === 'en'
+                    ? "Please file your flight plan (FILE FPL) first!"
+                    : "Silakan FILE FPL rute penerbangan terlebih dahulu!");
+                return;
+            }
+            initAudioContext();
+            const spokenCs = getSpokenCallsign();
+            const currentFL = Math.max(100, Math.round((currentAlt || 28000) / 100));
+            const nextFL = currentFL + 20;
+            demoCruiseAlt = Math.min(43000, nextFL * 100);
+            flightPhase = "CLIMB";
+
+            const pilotReq = `${activeStationName}, ${spokenCs}, currently at Flight Level ${currentFL}, requesting step climb to Flight Level ${nextFL} for optimal cruise.`;
+            appendLog('pilot', `${getCallsignLabel()} (CO-PILOT)`, pilotReq);
+
+            const atcReply = `${spokenCs}, ${activeStationName}, approved. Climb and maintain Flight Level ${nextFL}, resume own navigation to ${destAirport.name}.`;
+            const rbSample = `Climbing Flight Level ${nextFL}, ${spokenCs}.`;
+
+            lastInstructorStation = activeStationName;
+            lastInstructorFreq = activeFreq;
+            lastInstructorCc = activeAirportObj ? activeAirportObj.cc : originAirport.cc;
+
+            appendLog('atc', `⬆️ STEP CLIMB — ${activeStationName} (${activeFreq})`, atcReply);
+            speakSingleCountryController(lastInstructorCc, atcReply);
+            setSmartCoPilotAction(
+                "READBACK",
+                `⚠️ READBACK REQUIRED: "${rbSample}"`,
+                "🎙️ CO-PILOT READBACK",
+                rbSample
+            );
+        }
+
+        function appendLog(sender, title, text, isEmg = false, isBorder = false) {
             const logBox = document.getElementById('radio-log');
             const div = document.createElement('div');
-            let displayMessage = message;
+            const displayedText = (sender === 'atc') ? localizeAtcMessageForDisplayAndSpeech(text, appLang) : text;
             if (sender === 'atc') {
-                div.className = isEmergencyMsg ? 'msg-atc emergency' : (isBorderMsg ? 'msg-atc border-alert' : 'msg-atc');
-                displayMessage = localizeAtcMessageForDisplayAndSpeech(message, appLang);
+                div.className = 'msg-atc' + (isEmg ? ' emergency' : '') + (isBorder ? ' border-alert' : '');
             } else {
                 div.className = 'msg-pilot';
             }
-            div.innerHTML = `<strong>[${title}]:</strong> ${displayMessage}`;
+            div.innerHTML = `<span class="msg-sys-title">${title}</span>${displayedText}`;
             logBox.appendChild(div);
             logBox.scrollTop = logBox.scrollHeight;
         }
 
         // ==========================================
-        // 11. SIMULASI RUTE GREAT CIRCLE 3D + KECEPATAN PLAY (0.5x s/d 20x)
+        // 11. SIMULASI RUTE INTERAKTIF (TEST RUTE)
         // ==========================================
         let demoInterval = null;
         let demoProgress = 0;
+        let demoCruiseAlt = 34000;
         let demoSpeedMultiplier = 1;
-        let isDemoMode = false;
-        let demoCruiseAlt = 35000;
-        let demoSimAlt = 0;
-
-        function calculateBearing(lat1, lon1, lat2, lon2) {
-            const toRad = Math.PI / 180;
-            const phi1 = lat1 * toRad, phi2 = lat2 * toRad;
-            const dLon = (lon2 - lon1) * toRad;
-            const y = Math.sin(dLon) * Math.cos(phi2);
-            const x = Math.cos(phi1) * Math.sin(phi2) -
-                      Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLon);
-            return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
-        }
 
         function setDemoSpeed(mult) {
             demoSpeedMultiplier = mult;
-            const mapIds = { 0.5: 'spd-05', 1: 'spd-1', 2: 'spd-2', 5: 'spd-5', 10: 'spd-10', 20: 'spd-20' };
-            Object.entries(mapIds).forEach(([val, id]) => {
-                const el = document.getElementById(id);
-                if (el) el.classList.toggle('active', Number(val) === mult);
-            });
+            document.querySelectorAll('.btn-spd').forEach(b => b.classList.remove('active'));
+            const idMap = { 0.5: 'spd-05', 1: 'spd-1', 2: 'spd-2', 5: 'spd-5', 10: 'spd-10', 20: 'spd-20' };
+            const activeBtn = document.getElementById(idMap[mult]);
+            if (activeBtn) activeBtn.classList.add('active');
         }
 
         function stopDemoFlightUI() {
-            if (demoInterval) {
-                clearInterval(demoInterval);
-                demoInterval = null;
-            }
-            isDemoMode = false;
-            document.getElementById('btn-sim').innerText = appLang === 'en' ? "🛫 TEST ROUTE" : "🛫 TEST RUTE";
+            clearInterval(demoInterval);
+            demoInterval = null;
             document.getElementById('demo-speed-bar').classList.remove('show');
+            const btn = document.getElementById('btn-sim');
+            btn.innerText = appLang === 'en' ? "🛫 TEST ROUTE" : "🛫 TEST RUTE";
+            btn.style.background = "";
+            btn.style.color = "";
         }
 
         function toggleDemoFlight() {
-            const btn = document.getElementById('btn-sim');
+            initAudioContext();
             if (demoInterval) {
                 stopDemoFlightUI();
                 return;
             }
 
-            if (!validatePlayerFlightInputs()) return;
+            if (!activateFlightPlan(true)) return;
 
-            initAudioContext();
-            isDemoMode = true;
-            currentAlt = 0;
-            if (!activateFlightPlan(true)) {
-                isDemoMode = false;
-                return;
-            }
-            autoFollowPlane = true;
             demoProgress = 0;
-            demoCruiseAlt = 35000;
-            demoSimAlt = 500;
-            setDemoSpeed(1);
-            btn.innerText = "⏹️ STOP TEST";
-            document.getElementById('demo-speed-bar').classList.add('show');
+            demoCruiseAlt = 34000;
+            const totalDistNM = getDistanceNM(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon);
+            demoCruiseAlt = totalDistNM < 450 ? 24000 : (totalDistNM < 1200 ? 32000 : 36000);
 
-            const initBearing = calculateBearing(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon);
-            updateAircraftPosition(originAirport.lat, originAirport.lon, initBearing, 500, 160);
+            document.getElementById('demo-speed-bar').classList.add('show');
+            const btn = document.getElementById('btn-sim');
+            btn.innerText = "⏹️ STOP TEST";
+            btn.style.background = "#ef4444";
+            btn.style.color = "white";
 
             demoInterval = setInterval(() => {
-                demoProgress += (0.0002 * demoSpeedMultiplier);
+                const stepFraction = (0.0045 * Math.max(250, 9000 / Math.max(150, totalDistNM))) * demoSpeedMultiplier;
+                demoProgress += stepFraction;
+
                 if (demoProgress >= 1) {
-                    demoSimAlt = 0;
-                    const finalBearing = calculateBearing(currentLat, currentLon, destAirport.lat, destAirport.lon);
-                    updateAircraftPosition(destAirport.lat, destAirport.lon, finalBearing, 0, 12);
+                    demoProgress = 1;
+                    updateAircraftPosition(destAirport.lat, destAirport.lon, currentHeading, 0, 0);
                     stopDemoFlightUI();
-                } else {
-                    const gcPos = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, demoProgress);
-                    const nextPos = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, Math.min(1, demoProgress + 0.005));
-                    const dynamicHdg = calculateBearing(gcPos.lat, gcPos.lon, nextPos.lat, nextPos.lon);
-
-                    const targetAlt = demoProgress < 0.15
-                        ? Math.round((demoProgress / 0.15) * demoCruiseAlt)
-                        : (demoProgress > 0.85
-                            ? Math.max(150, Math.round(((1 - demoProgress) / 0.15) * demoCruiseAlt))
-                            : demoCruiseAlt);
-
-                    const altDiff = targetAlt - demoSimAlt;
-                    const maxStep = Math.max(250, 450 * demoSpeedMultiplier);
-                    if (Math.abs(altDiff) <= maxStep) {
-                        demoSimAlt = targetAlt;
-                    } else {
-                        demoSimAlt += Math.sign(altDiff) * maxStep;
-                    }
-
-                    const simSpd = demoSimAlt > 10000 ? 465 : (demoSimAlt > 2500 ? 240 : 175);
-                    updateAircraftPosition(gcPos.lat, gcPos.lon, dynamicHdg, Math.round(demoSimAlt), simSpd);
+                    setTimeout(() => showPostFlightSummaryCard(), 600);
+                    return;
                 }
-            }, 600);
+
+                const pt = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, demoProgress);
+                const nextPt = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, Math.min(1, demoProgress + 0.01));
+                const hdg = calculateBearing(pt.lat, pt.lon, nextPt.lat, nextPt.lon);
+
+                let alt = 0;
+                let spd = 0;
+                if (demoProgress < 0.15) {
+                    const t = demoProgress / 0.15;
+                    alt = Math.round(t * demoCruiseAlt);
+                    spd = Math.round(250 + t * 210);
+                } else if (demoProgress <= 0.82) {
+                    alt = demoCruiseAlt;
+                    spd = 465;
+                } else {
+                    const t = (demoProgress - 0.82) / 0.18;
+                    alt = Math.max(0, Math.round((1 - t) * demoCruiseAlt));
+                    spd = Math.max(0, Math.round(465 - t * 325));
+                }
+
+                updateAircraftPosition(pt.lat, pt.lon, hdg, alt, spd);
+            }, 400);
+        }
+
+        function calculateBearing(lat1, lon1, lat2, lon2) {
+            const toRad = Math.PI / 180;
+            const y = Math.sin((lon2 - lon1) * toRad) * Math.cos(lat2 * toRad);
+            const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) -
+                      Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos((lon2 - lon1) * toRad);
+            return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
         }
 
         // ==========================================
-        // 12. KONEKSI WEBSOCKET AEROFLY FS 4 OPSIONAL
+        // 12. KONEKSI OPSIONAL KE AEROFLY FS 4 BRIDGE (TIDAK WAJIB DIBUKA)
         // ==========================================
-        let aeroflySocket = null;
-        let reconnectTimer = null;
-        let bridgeOptInEnabled = false;
+        let ws = null;
+        let bridgeReconnectTimer = null;
+        let bridgeEverConnected = false;
 
-        function setBridgeStatusBadge(state, labelText) {
-            const statusEl = document.getElementById('conn-status');
-            if (!statusEl) return;
-            statusEl.classList.remove('bridge-live');
-            if (state === 'connected') {
-                statusEl.classList.add('bridge-live');
-                statusEl.innerText = labelText || "BRIDGE CONNECTED";
-                statusEl.style.borderColor = "#38bdf8";
-                statusEl.style.color = "#38bdf8";
-            } else if (state === 'connecting') {
-                statusEl.innerText = labelText || "SCANNING BRIDGE...";
-                statusEl.style.borderColor = "#facc15";
-                statusEl.style.color = "#facc15";
-            } else {
-                statusEl.innerText = labelText || "NO BRIDGE (DIRECT READY)";
-                statusEl.style.borderColor = "#10b981";
-                statusEl.style.color = "#10b981";
-            }
+        function setBridgeStandbyBadge() {
+            const el = document.getElementById('conn-status');
+            el.classList.remove('bridge-live');
+            el.innerText = "NO BRIDGE (DIRECT READY)";
+            el.title = "Opsional: klik untuk menyambung ulang ke Aerofly FS 4 Bridge (tidak wajib dibuka sebelum terbang)";
         }
 
-        function connectAeroflyBridge(manualTrigger = false) {
-            if (manualTrigger) {
-                bridgeOptInEnabled = true;
+        function connectAeroflyBridge(manualClick = false) {
+            if (bridgeReconnectTimer) {
+                clearTimeout(bridgeReconnectTimer);
+                bridgeReconnectTimer = null;
             }
-            if (!bridgeOptInEnabled) {
-                setBridgeStatusBadge('idle', "NO BRIDGE (DIRECT READY)");
-                return;
-            }
-            if (aeroflySocket && (aeroflySocket.readyState === WebSocket.OPEN || aeroflySocket.readyState === WebSocket.CONNECTING)) {
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
                 return;
             }
 
-            if (manualTrigger) {
-                setBridgeStatusBadge('connecting', "CONNECTING BRIDGE...");
+            const el = document.getElementById('conn-status');
+            if (manualClick) {
+                el.innerText = "CONNECTING BRIDGE...";
             }
 
             try {
-                const ws = new WebSocket('ws://localhost:8765');
-                aeroflySocket = ws;
-
-                const connectTimeout = setTimeout(() => {
-                    if (ws.readyState === WebSocket.CONNECTING) {
-                        try { ws.close(); } catch (e) {}
-                    }
-                }, 1500);
-
+                ws = new WebSocket("ws://localhost:8765");
                 ws.onopen = () => {
-                    clearTimeout(connectTimeout);
-                    setBridgeStatusBadge('connected', "BRIDGE CONNECTED");
+                    bridgeEverConnected = true;
+                    el.classList.add('bridge-live');
+                    el.innerText = "FS4 BRIDGE CONNECTED";
+                    el.title = "Terhubung langsung ke Aerofly FS 4 Bridge";
                 };
                 ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
-                        if (data.action === "toggle_ptt") { toggleVoiceInput(); return; }
-                        if (data.action === "center_map") { centerOnPlane(); return; }
-                        if (!isDemoMode && typeof data.lat === 'number' && typeof data.lon === 'number') {
+                        if (typeof data.lat === 'number' && typeof data.lon === 'number') {
+                            if (demoInterval) stopDemoFlightUI();
                             updateAircraftPosition(data.lat, data.lon, data.heading || 0, data.altitude || 0, data.speed || 0);
                         }
                     } catch (e) {}
                 };
                 ws.onclose = () => {
-                    clearTimeout(connectTimeout);
-                    aeroflySocket = null;
-                    setBridgeStatusBadge('idle', "NO BRIDGE (DIRECT READY)");
-                    clearTimeout(reconnectTimer);
-                    if (bridgeOptInEnabled) {
-                        reconnectTimer = setTimeout(() => connectAeroflyBridge(false), 6000);
+                    setBridgeStandbyBadge();
+                    if (bridgeEverConnected) {
+                        bridgeReconnectTimer = setTimeout(() => connectAeroflyBridge(false), 15000);
                     }
                 };
                 ws.onerror = () => {
-                    clearTimeout(connectTimeout);
-                    try { ws.close(); } catch (e) {}
+                    setBridgeStandbyBadge();
                 };
             } catch (e) {
-                aeroflySocket = null;
-                setBridgeStatusBadge('idle', "NO BRIDGE (DIRECT READY)");
+                setBridgeStandbyBadge();
             }
         }
 
-        // ==========================================
-        // 13. PROSEDUR STEP CLIMB (LONG-HAUL RVSM +2,000 FT)
-        // ==========================================
-        function requestStepClimb() {
-            initAudioContext();
-            const spokenCs = getSpokenCallsign();
-            if (currentAlt < 24000) {
-                const reply = `${spokenCs}, ${activeStationName}, step climb procedure is only available once established at high-altitude cruise above Flight Level 240.`;
-                appendLog('atc', `${activeStationName} (${activeFreq})`, reply);
-                speakSingleCountryController(activeAirportObj ? activeAirportObj.cc : (originAirport ? originAirport.cc : "ID"), reply);
-                return;
-            }
-            const currentFL = Math.round(currentAlt / 100);
-            const nextFL = Math.min(430, currentFL + 20);
-            if (currentFL >= 430) {
-                const reply = `${spokenCs}, ${activeStationName}, you are already at maximum certified Flight Level 430.`;
-                appendLog('atc', `${activeStationName} (${activeFreq})`, reply);
-                speakSingleCountryController(activeAirportObj ? activeAirportObj.cc : (originAirport ? originAirport.cc : "ID"), reply);
-                return;
-            }
-            const reqMsg = `${activeStationName}, ${spokenCs}, maintaining Flight Level ${currentFL}, lighter weight now, request step climb to Flight Level ${nextFL}.`;
-            handlePilotMessage(reqMsg, false, true);
-        }
-
-        // Terapkan preferensi bahasa awal (EN / ID)
+        setBridgeStandbyBadge();
         applyAppLanguageUI();
-
-        // Default langsung siap pakai tanpa menyalakan bridge dulu
-        setBridgeStatusBadge('idle', "NO BRIDGE (DIRECT READY)");
+        refreshRunwayDatalists();
     </script>
 </body>
 </html>
