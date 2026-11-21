@@ -746,7 +746,7 @@
                 </div>
             </div>
 
-            <!-- SMART CONTEXT-AWARE CO-PILOT BAR -->
+            <!-- SMART CO-PILOT ASSIST BAR -->
             <div class="copilot-assist-bar" id="copilot-assist-bar">
                 <span class="copilot-prompt-text" id="copilot-prompt-text">⚠️ CO-PILOT READY</span>
                 <button class="btn-mini" id="btn-copilot-action" style="border-color:#facc15; color:#facc15;" onclick="executeSmartCoPilot()">🎙️ CO-PILOT</button>
@@ -1853,12 +1853,12 @@
 
             const rawCs = getSpokenCallsign();
             if (rawCs) {
-                const escCs = rawCs.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                t = t.replace(new RegExp(`\\b${escCs}\\b`, 'g'), protect);
+                const escCs = rawCs.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+                t = t.replace(new RegExp(`\b${escCs}\b`, 'g'), protect);
             }
-            t = t.replace(/\b[A-Z]{4}\b/g, protect);
-            t = t.replace(/\b(?:FL\s*\d{2,3}|Flight Level\s+\d{2,3}|Runway\s+\d{2}[LRC]?|QNH\s+\d{4}|squawk\s+\d{4}|\d{3}\.\d{1,3}(?:\s*MHz)?|\d{3}\s*degrees|\d{1,2},?\d{3}\s*feet)\b/gi, protect);
-            const codeRegex = new RegExp(`\\b(${PROTECTED_AVIATION_CODES.join('|')})\\b`, 'g');
+            t = t.replace(/[A-Z]{4}/g, protect);
+            t = t.replace(/(?:FL\s*\d{2,3}|Flight Level\s+\d{2,3}|Runway\s+\d{2}[LRC]?|QNH\s+\d{4}|squawk\s+\d{4}|\d{3}\.\d{1,3}(?:\s*MHz)?|\d{3}\s*degrees|\d{1,2},?\d{3}\s*feet)/gi, protect);
+            const codeRegex = new RegExp(`\b(${PROTECTED_AVIATION_CODES.join('|')})\b`, 'g');
             t = t.replace(codeRegex, protect);
 
             const phraseReplacements = [
@@ -1904,32 +1904,32 @@
             const rawCs = getSpokenCallsign();
             if (rawCs) {
                 const spokenCs = formatCallsignForSpeech(rawCs);
-                const escapedCs = rawCs.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                t = t.replace(new RegExp(`\\b${escapedCs}\\b`, 'gi'), spokenCs);
+                const escapedCs = rawCs.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+                t = t.replace(new RegExp(`\b${escapedCs}\b`, 'gi'), spokenCs);
             }
 
-            t = t.replace(/\b([A-Z]{2,4})(\d+)\b/g, (full, prefix, digits) => {
+            t = t.replace(/([A-Z]{2,4})(\d+)/g, (full, prefix, digits) => {
                 if (airlineTelephonyMap[prefix]) {
                     return `${airlineTelephonyMap[prefix]} ${spellDigitsVHF(digits)}`;
                 }
                 return full;
             });
 
-            t = t.replace(/\b(\d{3})\.(\d{1,3})\b/g, (_, p1, p2) => {
+            t = t.replace(/(\d{3})\.(\d{1,3})/g, (_, p1, p2) => {
                 return `${spellDigitsVHF(p1)} decimal ${spellDigitsVHF(p2)}`;
             });
 
-            t = t.replace(/\bFL\s*(\d{2,3})\b/gi, (_, num) => {
+            t = t.replace(/FL\s*(\d{2,3})/gi, (_, num) => {
                 return `flight level ${spellDigitsVHF(num)}`;
             });
-            t = t.replace(/\bFlight Level\s+(\d{2,3})\b/gi, (_, num) => {
+            t = t.replace(/Flight Level\s+(\d{2,3})/gi, (_, num) => {
                 return `flight level ${spellDigitsVHF(num)}`;
             });
 
-            t = t.replace(/\bsquawk\s+(\d{4})\b/gi, (_, num) => `squawk ${spellDigitsVHF(num)}`);
-            t = t.replace(/\bQNH\s+(\d{4})\b/gi, (_, num) => `Q N H ${spellDigitsVHF(num)}`);
+            t = t.replace(/squawk\s+(\d{4})/gi, (_, num) => `squawk ${spellDigitsVHF(num)}`);
+            t = t.replace(/QNH\s+(\d{4})/gi, (_, num) => `Q N H ${spellDigitsVHF(num)}`);
 
-            t = t.replace(/\bRunway\s+(\d{2})([LRC])?\b/gi, (_, num, side) => {
+            t = t.replace(/Runway\s+(\d{2})([LRC])?/gi, (_, num, side) => {
                 const sideWord = side === 'L' ? ' left' : (side === 'R' ? ' right' : (side === 'C' ? ' center' : ''));
                 return `Runway ${spellDigitsVHF(num)}${sideWord}`;
             });
@@ -3064,7 +3064,7 @@
                 'child', 'kid', 'kids', 'junior', 'young', 'boy', 'girl', 'baby',
                 'ana', 'maisie', 'eloise', 'molly', 'millie', 'polly', 'zira', 'heera'
             ];
-            return blockedKeywords.some(kw => new RegExp(`\\b${kw}\\b`, 'i').test(n));
+            return blockedKeywords.some(kw => new RegExp(`\b${kw}\b`, 'i').test(n));
         }
 
         function filterAdultVoices(voiceList) {
@@ -3087,8 +3087,8 @@
                 'tony', 'roger', 'george', 'daniel', 'david', 'mark', 'james', 'keita', 'injoon',
                 'yunxi', 'yunjian', 'ardi', 'osman', 'hamed', 'shakir'
             ];
-            if (femaleMarkers.some(m => new RegExp(`\\b${m}\\b`, 'i').test(n))) return "female";
-            if (maleMarkers.some(m => new RegExp(`\\b${m}\\b`, 'i').test(n))) return "male";
+            if (femaleMarkers.some(m => new RegExp(`\b${m}\b`, 'i').test(n))) return "female";
+            if (maleMarkers.some(m => new RegExp(`\b${m}\b`, 'i').test(n))) return "male";
             return "unknown";
         }
 
@@ -3484,9 +3484,9 @@
 
                 const combinedTranscript = (finalTranscript + " " + interimTranscript).trim();
                 let spokenText = combinedTranscript
-                    .replace(/\bsnapper\b/gi, "Singapore")
-                    .replace(/\bsinga\b/gi, "Singapore")
-                    .replace(/\btexting\b/gi, "taxiing");
+                    .replace(/snapper/gi, "Singapore")
+                    .replace(/singa/gi, "Singapore")
+                    .replace(/texting/gi, "taxiing");
 
                 finalTranscript = "";
                 interimTranscript = "";
@@ -3918,91 +3918,99 @@
                 }
             }
             else if (msg === "copy" || msg === "roger" || msg === "wilco") {
-                reply = `${spokenCs}, ${activeStationName}, roger.`;
+                reply = `${spokenCs}, roger.`;
             }
-            else if (msg.length < 3 || ["uh", "um", "er", "ah", "huh", "what"].includes(msg)) {
-                reply = `${spokenCs}, ${activeStationName}, say again, unreadable transmission.`;
+            else if (msg.includes("radio check") || msg.includes("how do you read")) {
+                reply = `${spokenCs}, ${activeStationName}, reading you loud and clear, five by five.`;
             }
             else {
-                reply = `${spokenCs}, ${activeStationName}, reading you loud and clear, five by five. Continue navigation to ${destAirport.name} as cleared.`;
+                if (msg.split(/\s+/).length < 2) {
+                    reply = `${spokenCs}, ${activeStationName}, say again, unreadable transmission.`;
+                } else {
+                    reply = `${spokenCs}, ${activeStationName}, roger, maintain current flight level and proceed as cleared toward ${destAirport.name}.`;
+                }
             }
 
             appendLog('atc', replyStationHeader, reply, isEmgReply, isBorderReply);
-            speakSingleCountryController(replyCc, reply);
+            speakSingleCountryController(replyCc, reply, replyStationHeader);
         }
 
         function requestStepClimb() {
             if (!hasActiveFlightPlan || !originAirport || !destAirport) {
-                alert(appLang === 'en'
-                    ? "Please file your flight plan (FILE FPL) first!"
-                    : "Silakan FILE FPL rute penerbangan terlebih dahulu!");
+                alert(appLang === 'en' ? "Please file your flight plan first!" : "Silakan FILE FPL terlebih dahulu!");
                 return;
             }
             initAudioContext();
             const spokenCs = getSpokenCallsign();
-            const currentFL = Math.max(100, Math.round((currentAlt || 28000) / 100));
-            const nextFL = currentFL + 20;
-            demoCruiseAlt = Math.min(43000, nextFL * 100);
-            flightPhase = "CLIMB";
+            const currentFL = currentAlt >= 1000 ? Math.round(currentAlt / 100) : 330;
+            const nextFL = Math.min(430, currentFL + 20);
+            const pilotReq = `${activeStationName}, ${spokenCs}, currently at Flight Level ${currentFL}, request step climb to Flight Level ${nextFL} due to fuel burn.`;
 
-            const pilotReq = `${activeStationName}, ${spokenCs}, currently at Flight Level ${currentFL}, requesting step climb to Flight Level ${nextFL} for optimal cruise.`;
-            appendLog('pilot', `${getCallsignLabel()} (CO-PILOT)`, pilotReq);
+            speechGenerationId++;
+            const myGen = speechGenerationId;
+            cancelAllSpeechSafe(true);
 
-            const atcReply = `${spokenCs}, ${activeStationName}, approved. Climb and maintain Flight Level ${nextFL}, resume own navigation to ${destAirport.name}.`;
-            const rbSample = `Climbing Flight Level ${nextFL}, ${spokenCs}.`;
-
-            lastInstructorStation = activeStationName;
-            lastInstructorFreq = activeFreq;
-            lastInstructorCc = activeAirportObj ? activeAirportObj.cc : originAirport.cc;
-
-            appendLog('atc', `⬆️ STEP CLIMB — ${activeStationName} (${activeFreq})`, atcReply);
-            speakSingleCountryController(lastInstructorCc, atcReply);
-            setSmartCoPilotAction(
-                "READBACK",
-                `⚠️ READBACK REQUIRED: "${rbSample}"`,
-                "🎙️ CO-PILOT READBACK",
-                rbSample
-            );
+            const vCoPilot = getCoPilotVoice();
+            enqueueSpeechItem({
+                genId: myGen,
+                text: humanizeRadioTextForSpeech(pilotReq),
+                voice: vCoPilot,
+                lang: vCoPilot ? vCoPilot.lang : 'en-US',
+                pitch: 1.04,
+                rate: 0.99,
+                playStartClick: true,
+                playEndClick: true,
+                onComplete: () => {
+                    if (myGen !== speechGenerationId) return;
+                    appendLog('pilot', `${getCallsignLabel()} (CO-PILOT)`, pilotReq);
+                    demoCruiseAlt = nextFL * 100;
+                    flightPhase = "CLIMB";
+                    const replyCc = activeAirportObj ? activeAirportObj.cc : originAirport.cc;
+                    const atcResp = `${spokenCs}, ${activeStationName}, approved, climb and maintain Flight Level ${nextFL}, report reaching.`;
+                    appendLog('atc', `⬆️ STEP CLIMB — ${activeStationName} (${activeFreq})`, atcResp);
+                    speakSingleCountryController(replyCc, atcResp, activeStationName);
+                }
+            });
         }
 
         function appendLog(sender, title, text, isEmg = false, isBorder = false) {
             const logBox = document.getElementById('radio-log');
             const div = document.createElement('div');
-            const displayedText = (sender === 'atc') ? localizeAtcMessageForDisplayAndSpeech(text, appLang) : text;
+            let displayText = text;
             if (sender === 'atc') {
-                div.className = 'msg-atc' + (isEmg ? ' emergency' : '') + (isBorder ? ' border-alert' : '');
-            } else {
-                div.className = 'msg-pilot';
+                displayText = localizeAtcMessageForDisplayAndSpeech(text, appLang);
             }
-            div.innerHTML = `<span class="msg-sys-title">${title}</span>${displayedText}`;
+            if (sender === 'pilot') {
+                div.className = 'msg-pilot';
+            } else {
+                div.className = 'msg-atc' + (isEmg ? ' emergency' : '') + (isBorder ? ' border-alert' : '');
+            }
+            div.innerHTML = `<span class="msg-sys-title">${title}</span>${displayText}`;
             logBox.appendChild(div);
             logBox.scrollTop = logBox.scrollHeight;
         }
 
         // ==========================================
-        // 11. SIMULASI RUTE INTERAKTIF (TEST RUTE)
+        // 11. SIMULASI RUTE NYATA LENGKAP (TAKEOFF -> CRUISE -> LANDING -> TAXI TO GATE)
         // ==========================================
         let demoInterval = null;
         let demoProgress = 0;
-        let demoCruiseAlt = 34000;
+        let demoCruiseAlt = 35000;
         let demoSpeedMultiplier = 1;
 
         function setDemoSpeed(mult) {
             demoSpeedMultiplier = mult;
             document.querySelectorAll('.btn-spd').forEach(b => b.classList.remove('active'));
-            const idMap = { 0.5: 'spd-05', 1: 'spd-1', 2: 'spd-2', 5: 'spd-5', 10: 'spd-10', 20: 'spd-20' };
-            const activeBtn = document.getElementById(idMap[mult]);
+            const keyMap = { 0.5: 'spd-05', 1: 'spd-1', 2: 'spd-2', 5: 'spd-5', 10: 'spd-10', 20: 'spd-20' };
+            const activeBtn = document.getElementById(keyMap[mult]);
             if (activeBtn) activeBtn.classList.add('active');
         }
 
         function stopDemoFlightUI() {
             clearInterval(demoInterval);
             demoInterval = null;
+            document.getElementById('btn-sim').innerText = appLang === 'en' ? "🛫 TEST ROUTE" : "🛫 TEST RUTE";
             document.getElementById('demo-speed-bar').classList.remove('show');
-            const btn = document.getElementById('btn-sim');
-            btn.innerText = appLang === 'en' ? "🛫 TEST ROUTE" : "🛫 TEST RUTE";
-            btn.style.background = "";
-            btn.style.color = "";
         }
 
         function toggleDemoFlight() {
@@ -4011,125 +4019,144 @@
                 stopDemoFlightUI();
                 return;
             }
+            if (!validatePlayerFlightInputs()) return;
 
-            if (!activateFlightPlan(true)) return;
+            validateCallsignInput();
+            const o = parseAirportFromInput(document.getElementById('fp-origin').value, null);
+            const d = parseAirportFromInput(document.getElementById('fp-dest').value, null);
+            if (!o || !d) return;
 
-            demoProgress = 0;
-            demoCruiseAlt = 34000;
+            document.getElementById('fp-origin').value = `${o.code} - ${o.name}`;
+            document.getElementById('fp-dest').value = `${d.code} - ${d.name}`;
+
+            currentLat = o.lat;
+            currentLon = o.lon;
+            currentAlt = 0;
+            currentSpeed = 0;
+            flightPhase = "PREFLIGHT";
+            groundSubStep = "DELIVERY";
+
+            activateFlightPlan(true);
+
             const totalDistNM = getDistanceNM(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon);
-            demoCruiseAlt = totalDistNM < 450 ? 24000 : (totalDistNM < 1200 ? 32000 : 36000);
+            demoCruiseAlt = totalDistNM < 450 ? 24000 : (totalDistNM < 1200 ? 31000 : 35000);
 
+            document.getElementById('btn-sim').innerText = "⏹️ STOP TEST";
             document.getElementById('demo-speed-bar').classList.add('show');
-            const btn = document.getElementById('btn-sim');
-            btn.innerText = "⏹️ STOP TEST";
-            btn.style.background = "#ef4444";
-            btn.style.color = "white";
+            demoProgress = 0.003;
 
             demoInterval = setInterval(() => {
-                const stepFraction = (0.0045 * Math.max(250, 9000 / Math.max(150, totalDistNM))) * demoSpeedMultiplier;
-                demoProgress += stepFraction;
+                const step = (totalDistNM > 3000 ? 0.0012 : 0.0024) * demoSpeedMultiplier;
+                demoProgress += step;
 
-                if (demoProgress >= 1) {
-                    demoProgress = 1;
-                    updateAircraftPosition(destAirport.lat, destAirport.lon, currentHeading, 0, 0);
+                if (demoProgress >= 1.0) {
+                    const finalAssign = getAssignedRunwayAndGate(destAirport);
+                    updateAircraftPosition(destAirport.lat, destAirport.lon, 90, 0, 14);
+                    flightPhase = "LANDED_TAXI_IN";
+                    groundSubStep = "PARKED";
                     stopDemoFlightUI();
-                    setTimeout(() => showPostFlightSummaryCard(), 600);
+
+                    const spokenCs = getSpokenCallsign();
+                    const gndStation = `${destAirport.name} Ground`;
+                    activeStationName = gndStation;
+                    activeFreq = destAirport.gndFreq;
+                    activeAirportObj = destAirport;
+                    const gndMsg = `${spokenCs}, ${gndStation}. Welcome to ${destAirport.name}. Taxi to ${finalAssign.gate} via ${destAirport.taxi}, marshalling crew is waiting for you.`;
+                    appendLog('atc', `🛬 ARRIVED — ${gndStation} (${destAirport.gndFreq})`, gndMsg);
+                    speakSingleCountryController(destAirport.cc, gndMsg, gndStation);
+                    suggestNextCoPilotStep();
+                    setTimeout(() => showPostFlightSummaryCard(), 1200);
                     return;
                 }
 
-                const pt = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, demoProgress);
-                const nextPt = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, Math.min(1, demoProgress + 0.01));
-                const hdg = calculateBearing(pt.lat, pt.lon, nextPt.lat, nextPt.lon);
+                const ptNow = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, demoProgress);
+                const ptNext = interpolateGreatCircle(originAirport.lat, originAirport.lon, destAirport.lat, destAirport.lon, Math.min(1, demoProgress + 0.005));
+                const hdg = calculateBearing(ptNow.lat, ptNow.lon, ptNext.lat, ptNext.lon);
 
-                let alt = 0;
-                let spd = 0;
-                if (demoProgress < 0.15) {
-                    const t = demoProgress / 0.15;
-                    alt = Math.round(t * demoCruiseAlt);
-                    spd = Math.round(250 + t * 210);
-                } else if (demoProgress <= 0.82) {
+                let alt = 0, spd = 0;
+                if (demoProgress < 0.14) {
+                    const climbRatio = demoProgress / 0.14;
+                    alt = Math.round(climbRatio * demoCruiseAlt);
+                    spd = Math.round(250 + climbRatio * 210);
+                } else if (demoProgress <= 0.80) {
                     alt = demoCruiseAlt;
                     spd = 465;
                 } else {
-                    const t = (demoProgress - 0.82) / 0.18;
-                    alt = Math.max(0, Math.round((1 - t) * demoCruiseAlt));
-                    spd = Math.max(0, Math.round(465 - t * 325));
+                    const descRatio = (demoProgress - 0.80) / 0.20;
+                    alt = Math.max(0, Math.round(demoCruiseAlt * (1 - Math.pow(descRatio, 0.85))));
+                    spd = Math.max(135, Math.round(460 - descRatio * 315));
                 }
 
-                updateAircraftPosition(pt.lat, pt.lon, hdg, alt, spd);
-            }, 400);
+                updateAircraftPosition(ptNow.lat, ptNow.lon, hdg, alt, spd);
+            }, 350);
         }
 
         function calculateBearing(lat1, lon1, lat2, lon2) {
-            const toRad = Math.PI / 180;
-            const y = Math.sin((lon2 - lon1) * toRad) * Math.cos(lat2 * toRad);
+            const toRad = Math.PI / 180, toDeg = 180 / Math.PI;
+            const dLon = (lon2 - lon1) * toRad;
+            const y = Math.sin(dLon) * Math.cos(lat2 * toRad);
             const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) -
-                      Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos((lon2 - lon1) * toRad);
-            return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+                      Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos(dLon);
+            return (Math.atan2(y, x) * toDeg + 360) % 360;
         }
 
         // ==========================================
-        // 12. KONEKSI OPSIONAL KE AEROFLY FS 4 BRIDGE (TIDAK WAJIB DIBUKA)
+        // 12. KONEKSI OPSIONAL AEROFLY FS 4 BRIDGE (TIDAK WAJIB DIBUKA SEBELUM TERBANG)
         // ==========================================
-        let ws = null;
-        let bridgeReconnectTimer = null;
-        let bridgeEverConnected = false;
+        let bridgeSocket = null;
+        let bridgeConnected = false;
+        let bridgeRetryTimer = null;
+        let manualBridgeAttempt = false;
 
-        function setBridgeStandbyBadge() {
-            const el = document.getElementById('conn-status');
-            el.classList.remove('bridge-live');
-            el.innerText = "NO BRIDGE (DIRECT READY)";
-            el.title = "Opsional: klik untuk menyambung ulang ke Aerofly FS 4 Bridge (tidak wajib dibuka sebelum terbang)";
-        }
-
-        function connectAeroflyBridge(manualClick = false) {
-            if (bridgeReconnectTimer) {
-                clearTimeout(bridgeReconnectTimer);
-                bridgeReconnectTimer = null;
+        function connectAeroflyBridge(isManualClick = false) {
+            if (isManualClick) {
+                manualBridgeAttempt = true;
+                initAudioContext();
             }
-            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-                return;
+            if (bridgeSocket) {
+                try { bridgeSocket.onclose = null; bridgeSocket.close(); } catch (e) {}
+                bridgeSocket = null;
             }
-
-            const el = document.getElementById('conn-status');
-            if (manualClick) {
-                el.innerText = "CONNECTING BRIDGE...";
-            }
-
             try {
-                ws = new WebSocket("ws://localhost:8765");
-                ws.onopen = () => {
-                    bridgeEverConnected = true;
+                bridgeSocket = new WebSocket("ws://127.0.0.1:8765");
+                bridgeSocket.onopen = () => {
+                    bridgeConnected = true;
+                    manualBridgeAttempt = false;
+                    clearTimeout(bridgeRetryTimer);
+                    const el = document.getElementById('conn-status');
+                    el.innerText = "FS4 BRIDGE LIVE";
                     el.classList.add('bridge-live');
-                    el.innerText = "FS4 BRIDGE CONNECTED";
-                    el.title = "Terhubung langsung ke Aerofly FS 4 Bridge";
                 };
-                ws.onmessage = (event) => {
+                bridgeSocket.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
                         if (typeof data.lat === 'number' && typeof data.lon === 'number') {
                             if (demoInterval) stopDemoFlightUI();
-                            updateAircraftPosition(data.lat, data.lon, data.heading || 0, data.altitude || 0, data.speed || 0);
+                            updateAircraftPosition(data.lat, data.lon, data.heading || 0, data.alt || 0, data.speed || 0);
                         }
-                    } catch (e) {}
+                    } catch (err) {}
                 };
-                ws.onclose = () => {
-                    setBridgeStandbyBadge();
-                    if (bridgeEverConnected) {
-                        bridgeReconnectTimer = setTimeout(() => connectAeroflyBridge(false), 15000);
+                bridgeSocket.onclose = () => {
+                    const wasLive = bridgeConnected;
+                    bridgeConnected = false;
+                    const el = document.getElementById('conn-status');
+                    el.classList.remove('bridge-live');
+                    el.innerText = "NO BRIDGE (DIRECT READY)";
+                    if (wasLive || manualBridgeAttempt) {
+                        manualBridgeAttempt = false;
+                        bridgeRetryTimer = setTimeout(() => connectAeroflyBridge(false), 12000);
                     }
                 };
-                ws.onerror = () => {
-                    setBridgeStandbyBadge();
+                bridgeSocket.onerror = () => {
+                    bridgeConnected = false;
                 };
             } catch (e) {
-                setBridgeStandbyBadge();
+                bridgeConnected = false;
             }
         }
-
-        setBridgeStandbyBadge();
-        applyAppLanguageUI();
+        connectAeroflyBridge(false);
         refreshRunwayDatalists();
+        applyAppLanguageUI();
     </script>
 </body>
 </html>
