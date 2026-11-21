@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Globe ATM // Pure Natural ICAO ATC V7.4</title>
+    <title>3D Globe ATM // Pure Natural ICAO ATC V7.5</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link id="maplibre-css" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"
@@ -612,7 +612,7 @@
 <body>
 
     <header>
-        <div class="brand">🌍 3D GLOBE ATM // PURE NATURAL ICAO ATC V7.4</div>
+        <div class="brand">🌍 3D GLOBE ATM // PURE NATURAL ICAO ATC V7.5</div>
         <div class="header-controls">
             <button class="lang-toggle-btn" id="btn-lang-toggle" onclick="toggleAppLanguage()" title="Switch UI & ATC Voice Language (EN / ID) — ICAO codes protected">🌐 LANG: EN</button>
             <div class="clock-box" id="dynamic-clock" title="Aviation Zulu (UTC) & Local Time // UTC Offset">🕒 00:00:00Z // LOC WADD 00:00</div>
@@ -754,7 +754,7 @@
 
             <div class="radio-log" id="radio-log">
                 <div class="msg-atc" id="welcome-sys-msg">
-                    <span class="msg-sys-title">🌍 [ATC SYSTEM V7.4 — FULL LEMD 8 RUNWAYS, EDITABLE RWY INPUT &amp; ILS SYNC]</span>
+                    <span class="msg-sys-title">🌍 [ATC SYSTEM V7.5 — FULL LEMD 8 RUNWAYS, EDITABLE RWY INPUT &amp; ILS SYNC]</span>
                     • <strong>LEMD Madrid Barajas Complete 8 Runways &amp; ILS:</strong> Includes <code>14L</code>, <code>14R</code> (Non-ILS), <code>18L</code> (111.50 MHz), <code>18R</code> (110.70 MHz), <code>32L</code> (109.90 MHz), <code>32R</code> (109.10 MHz), <code>36L</code>, and <code>36R</code> (Non-ILS).<br>
                     • <strong>Editable / Custom Runway Input:</strong> <code>DEP RWY</code> &amp; <code>ARR RWY</code> use <code>&lt;input list="..."&gt;</code> so you can pick from suggestions or type any custom runway (such as <code>32R</code>) directly without waiting for a database update.<br>
                     • <strong>Complete Aerofly FS 4 Livery Telephony:</strong> Accurate ICAO/FS4 callsign pronunciation including <code>LNI</code> ➔ <em>Lion Inter</em>, <code>GIA</code> ➔ <em>Indonesia</em>, <code>UEA</code>/<code>UAE</code> ➔ <em>Emirates</em>, plus regional gender-locked voices.
@@ -3215,14 +3215,14 @@
             if (welcomeMsg) {
                 if (appLang === 'en') {
                     welcomeMsg.innerHTML = `
-                        <span class="msg-sys-title">🌍 [ATC SYSTEM V7.4 — FULL LEMD 8 RUNWAYS, EDITABLE RWY INPUT &amp; ILS SYNC]</span>
+                        <span class="msg-sys-title">🌍 [ATC SYSTEM V7.5 — FULL LEMD 8 RUNWAYS, EDITABLE RWY INPUT &amp; ILS SYNC]</span>
                         • <strong>LEMD Madrid Barajas Complete 8 Runways &amp; ILS:</strong> Includes <code>14L</code>, <code>14R</code> (Non-ILS), <code>18L</code> (111.50 MHz), <code>18R</code> (110.70 MHz), <code>32L</code> (109.90 MHz), <code>32R</code> (109.10 MHz), <code>36L</code>, and <code>36R</code> (Non-ILS).<br>
                         • <strong>Editable / Custom Runway Input:</strong> <code>DEP RWY</code> &amp; <code>ARR RWY</code> use <code>&lt;input list="..."&gt;</code> so you can pick from suggestions or type any custom runway (such as <code>32R</code>) directly without waiting for a database update.<br>
                         • <strong>Complete Aerofly FS 4 Livery Telephony:</strong> Accurate ICAO/FS4 callsign pronunciation including <code>LNI</code> ➔ <em>Lion Inter</em>, <code>GIA</code> ➔ <em>Indonesia</em>, <code>UEA</code>/<code>UAE</code> ➔ <em>Emirates</em>, plus regional gender-locked voices.
                     `;
                 } else {
                     welcomeMsg.innerHTML = `
-                        <span class="msg-sys-title">🌍 [SISTEM ATC V7.4 — 8 RUNWAY LEMD LENGKAP, INPUT RWY BEBAS &amp; SINKRON ILS]</span>
+                        <span class="msg-sys-title">🌍 [SISTEM ATC V7.5 — 8 RUNWAY LEMD LENGKAP, INPUT RWY BEBAS &amp; SINKRON ILS]</span>
                         • <strong>8 Runway &amp; ILS LEMD Madrid Barajas Lengkap:</strong> Mencakup <code>14L</code>, <code>14R</code> (Non-ILS), <code>18L</code> (111.50 MHz), <code>18R</code> (110.70 MHz), <code>32L</code> (109.90 MHz), <code>32R</code> (109.10 MHz), <code>36L</code>, dan <code>36R</code> (Non-ILS).<br>
                         • <strong>Input Runway Editable / Bebas:</strong> <code>DEP RWY</code> &amp; <code>ARR RWY</code> memakai <code>&lt;input list="..."&gt;</code> sehingga bisa dipilih dari saran maupun diketik bebas (misal <code>32R</code>) langsung tanpa menunggu update database.<br>
                         • <strong>Kamus Telephony Lengkap Aerofly FS 4:</strong> Pengucapan callsign maskapai akurat termasuk <code>LNI</code> ➔ <em>Lion Inter</em>, <code>GIA</code> ➔ <em>Indonesia</em>, <code>UEA</code>/<code>UAE</code> ➔ <em>Emirates</em>, dengan gender suara terkunci per negara.
